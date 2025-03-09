@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 out
 CMakeSettings.json
+.idea
+cmake-build-debug

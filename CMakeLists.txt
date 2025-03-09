@@ -8,11 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)  # 强制要求该标准
 #头文件目录
 include_directories("third_party")
 include_directories("source")
+include_directories("example")
 
-add_compile_definitions("TinyRenderer_Root_Path=${CMAKE_SOURCE_DIR}/source")
+add_compile_definitions("TinyRenderer_Root_Path=${CMAKE_SOURCE_DIR}")
 
 
 file(GLOB_RECURSE engine_cpp source/*.cpp source/*.h)
+file(GLOB_RECURSE example_cpp example/*.cpp example/*.h)
 
 
-add_executable(${PROJECT_NAME} main.cpp ${engine_cpp})
+add_executable(${PROJECT_NAME} "source/main.cpp" ${engine_cpp} ${example_cpp})

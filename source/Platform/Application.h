@@ -3,28 +3,24 @@ namespace TinyRenderer
 {
 	#define DEBUG_MODE 1
 	/// <summary>
-	/// 实现引擎组件间初始化/销毁顺序 定义引擎当前的模式(DEBUG/RELEASE)
+	/// 定义引擎初始化顺序
 	/// </summary>
 	class Application
 	{
 	public:
+		virtual Application* GetInstance() = 0;
 		/// <summary>
-		/// 获取程序单例
+		/// 引擎的主函数
 		/// </summary>
 		/// <returns></returns>
-		virtual Application* getInstance() = 0;
-		/// <summary>
-		/// 程序主函数
-		/// </summary>
-		/// <returns></returns>
-		virtual int Main(int argc, void* argv) = 0;
-		virtual bool run() = 0;
-		virtual bool initialEngine() = 0;
-		virtual bool terminalEngine() = 0;
+		virtual int Main(int argc, char** argv) = 0;
+		virtual bool Run() = 0;
+		virtual bool InitialEngine() = 0;
+		virtual bool TerminalEngine() = 0;
 
 		virtual ~Application() = default;
 	protected:
-		//由getInstance调用后分配内存
+		//应用程序单例
 		static Application* Instance;
 		Application() {};
 
@@ -33,14 +29,14 @@ namespace TinyRenderer
 	class WindowsApplication : public Application
 	{
 	public:
-		Application* getInstance() override;
-		int Main(int argc, void* argv) override;
+		Application* GetInstance() override;
+		int Main(int argc, char** argv) override;
 
 		
 	private:
-		bool run() override;
-		bool initialEngine() override;
-		bool terminalEngine() override;
+		bool Run() override;
+		bool InitialEngine() override;
+		bool TerminalEngine() override;
 
 		~WindowsApplication() override
 		{};
