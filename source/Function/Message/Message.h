@@ -18,24 +18,19 @@ namespace TinyRenderer
 	public:
 		static inline void LogInfo(const std::string& msg)
 		{
-			spdlog::info(msg);
-			ClearOss();
+			std::cout << msg << std::endl;
 		}
 		static inline void LogWarn(const std::string& msg)
 		{
-			spdlog::warn(msg);
-			ClearOss();
+			std::cout << msg << std::endl;
 		}
 		static inline void LogError(const std::string& msg)
 		{
-			spdlog::error(msg);
-			ClearOss();
+			std::cout << msg << std::endl;
+
+			//spdlog::error(msg);
 		}
-		static inline void ClearOss()
-		{
-			oss.str("");
-		}
-		static std::ostringstream oss;
+
 	};
 }
 
@@ -47,23 +42,32 @@ namespace TinyRenderer
 
 #ifndef LOG_INFO
 #define LOG_INFO(msg) \
-TinyRenderer::Message::oss << msg <<"\n"<< "File:" << __FILE__ \
-<< " Line: " << __LINE__<<"\n"; \
-TinyRenderer::Message::LogInfo(TinyRenderer::Message::oss.str());
+do{ \
+	std::ostringstream _oss; \
+	_oss << msg <<"\n"<< "File:" << __FILE__ \
+	<< " Line: " << __LINE__<<"\n"; \
+	TinyRenderer::Message::LogInfo(_oss.str()); \
+}while(0);
 #endif // !LOG_INFO
 
 #ifndef LOG_WARN
 #define LOG_WARN(msg) \
-TinyRenderer::Message::oss << msg << "\n" << "File:" << __FILE__ \
-<< " Line: " << __LINE__ << "\n"; \
-TinyRenderer::Message::LogWarn(TinyRenderer::Message::oss.str());
+do{ \
+	std::ostringstream _oss; \
+	_oss << msg << "\n" << "File:" << __FILE__ \
+	<< " Line: " << __LINE__ << "\n"; \
+	TinyRenderer::Message::LogWarn(_oss.str()); \
+}while(0);
 #endif // !LOG_WARN
 
 #ifndef LOG_ERROR
 #define LOG_ERROR(msg) \
-TinyRenderer::Message::oss << msg << "\n" << "File:" << __FILE__ \
-<< " Line: " << __LINE__ << "\n"; \
-TinyRenderer::Message::LogError(TinyRenderer::Message::oss.str()); \
+do{ \
+	std::ostringstream _oss; \
+	_oss << msg << "\n" << "File:" << __FILE__ \
+	<< " Line: " << __LINE__ << "\n"; \
+	TinyRenderer::Message::LogError(_oss.str()); \
+}while(0); \
 ASSERT(false);
 #endif // !LOG_ERROR
 
@@ -73,9 +77,3 @@ ASSERT(false);
 #define LOG_WARN(msg)
 #define LOG_ERROR(msg)
 #endif
-
-
-
-
-
-

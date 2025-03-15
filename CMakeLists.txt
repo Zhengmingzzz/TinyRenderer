@@ -17,4 +17,6 @@ file(GLOB_RECURSE engine_cpp source/*.cpp source/*.h)
 file(GLOB_RECURSE example_cpp example/*.cpp example/*.h)
 
 
-add_executable(${PROJECT_NAME} "source/main.cpp" ${engine_cpp} ${example_cpp})
+add_executable(${PROJECT_NAME} "source/main.cpp" ${engine_cpp} ${example_cpp}
+        source/Function/MemoryManager/Allocator.cpp
+        source/Function/MemoryManager/Allocator.h)

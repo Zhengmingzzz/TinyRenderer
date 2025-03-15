@@ -9,7 +9,7 @@
 
 using namespace TinyRenderer;
 using namespace std;
+
 void Example::Main()
 {
-
 }

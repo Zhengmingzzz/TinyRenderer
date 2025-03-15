@@ -21,7 +21,7 @@ namespace TinyRenderer
 		virtual ~Application() = default;
 	protected:
 		//应用程序单例
-		static Application* Instance;
+		static Application* instance;
 		Application() {};
 
 	};
