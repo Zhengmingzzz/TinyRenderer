@@ -10,6 +10,8 @@
 #include "Function/MemoryManager/PageManager.h"
 
 namespace TinyRenderer {
+    // 必须为2的次方数
+
     unsigned int MemoryManager::allocator_num;
     unsigned int MemoryManager::alignment = 8;
     unsigned int MemoryManager::max_userCapacity = 1024;
@@ -20,14 +22,10 @@ namespace TinyRenderer {
         StartUp(alignment, max_userCapacity);
     }
 
-    void MemoryManager::StartUp(unsigned int alignment, unsigned int max_userCapacity) {
-        // 计算出最多能有多少个allocator
-        this->allocator_num = std::log(max_userCapacity) / log(2) - 1;
-        this->StartUp(alignment,this->allocator_num, max_userCapacity);
-    }
-
     void MemoryManager::StartUp(unsigned int alignment, unsigned int allocator_num, unsigned int max_userCapacity) {
-        ASSERT(max_userCapacity % 2 == 0)
+        ASSERT(max_userCapacity % 2 == 0);
+        // max_userCapacity 最大只能为2的14次方，大于则会让2字节块索引失效
+        ASSERT(max_userCapacity <= 9182);
         this->alignment = alignment;
         this->allocator_num = allocator_num;
         this->max_userCapacity = max_userCapacity;
@@ -49,27 +47,22 @@ namespace TinyRenderer {
     }
 
     void* MemoryManager::Allocate(size_t size) {
+
         ASSERT(size > 0);
-        // 如果在一开始MamoryManager还没初始化时就申请内存则直接使用malloc
-        if (isEnable == false) {
-            void* result = malloc(size + 1);
-            unsigned char* uc_ptr = reinterpret_cast<unsigned char*>(result);
-            // 把首个字节设置为最大值0xff表示使用malloc分配
-            *uc_ptr = mallocFlag;
-            result = uc_ptr + 1;
-            return result;
-        }
+
         // 多分配1字节用于存储pageID
         size += 1;
-        int i=0;
-        for (; i<allocator_num; i++) {
-            if (size <= allocator[i].block_size) {
+
+        // 查找size适合在哪一个分配器分配内存
+        int alloc_idx = log(size) / log(2) - 1;
+        for (; alloc_idx <allocator_num; alloc_idx++) {
+            if (size <= allocator[alloc_idx].block_size) {
                 break;
             }
         }
         void* result = nullptr;
         // allocator_num表示allocator的数量，过大的内存分配和销毁都不会很频繁，所以直接使用malloc
-        if (i >= allocator_num) {
+        if (alloc_idx >= allocator_num || isEnable == false) {
             result = malloc(size);
             unsigned char* uc_ptr = reinterpret_cast<unsigned char*>(result);
             // 把首个字节设置为最大值0xff表示使用malloc分配
@@ -77,7 +70,7 @@ namespace TinyRenderer {
             result = uc_ptr + 1;
         }
         else {
-            result = allocator[i].Allocate();
+            result = allocator[alloc_idx].Allocate();
         }
 
         ASSERT(result != nullptr);

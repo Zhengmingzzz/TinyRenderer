@@ -11,12 +11,12 @@ public:
     void StartUp(int twoPowerI, unsigned int max_pageSize);
     void ShutDown();
 
-    // 只负责返回特点大小的内存块，不做别的操作
+    // 查找含有空闲块的page，并返回块
     void* Allocate();
 
     // 当前Allocator分配固定block_size大小的内存
     unsigned int block_size;
-    // 每个页的block数量
+    // 每个页的block数量，到0则代表没有块了
     unsigned int blockNum_prePage;
 private:
     Page* pagelist = nullptr;

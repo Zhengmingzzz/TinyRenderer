@@ -11,63 +11,80 @@
 
 namespace TinyRenderer {
 
-    void Allocator::StartUp(int twoPowerI, unsigned int max_userCapacity) {
-        ASSERT(max_userCapacity > 0);
-        ASSERT(twoPowerI > 0);
-        pagelist = nullptr;
+	void Allocator::StartUp(int twoPowerI, unsigned int max_userCapacity) {
+		ASSERT(max_userCapacity > 0);
+		ASSERT(twoPowerI > 0);
+		pagelist = nullptr;
 
-        this->block_size=static_cast<unsigned int>(pow(2, twoPowerI));
-        // MAX_PAGESIZE和block_size都为2的i次方
-        blockNum_prePage = block_size >= max_userCapacity ? 1 : max_userCapacity / block_size;
-        if (block_size < sizeof(void*))
-        {
-            // 每页的最后一个块不用，用于表示下一个块为空索引
-            blockNum_prePage = blockNum_prePage >= 0xffff ? 0xffff - 1 : blockNum_prePage;
-        }
-    }
+		this->block_size = static_cast<unsigned int>(pow(2, twoPowerI));
+		// MAX_PAGESIZE和block_size都为2的i次方，
+		blockNum_prePage = block_size >= max_userCapacity ? 1 : max_userCapacity / block_size;
+		if (block_size < sizeof(void*))
+		{
+			// 索引块的数量不能大于等于0xffff，0xffff用于表示空索引
+			blockNum_prePage = blockNum_prePage >= 0xffff ? 0xffff - 1 : blockNum_prePage;
+		}
+	}
 
-    void Allocator::ShutDown() {
-        FreeAllPage();
-    }
+	void Allocator::ShutDown() {
+		FreeAllPage();
+	}
 
-    void Allocator::FreeAllPage() 
-    {
-        while (pagelist != nullptr) 
-        {
-            Page* next = pagelist->next;
-            pagelist->ShutDown();
-            pagelist = next;
-        }
-    }
+	void Allocator::FreeAllPage()
+	{
+		while (pagelist != nullptr)
+		{
+			Page* next = pagelist->next;
+			pagelist->ShutDown();
+			pagelist = next;
+		}
+	}
 
 
-    void* Allocator::Allocate() {
-        void* result = nullptr;
-        Page* page = pagelist;
+	void* Allocator::Allocate()
+	{
+		void* result = nullptr;
 
-        while (result == nullptr) {
-            // 若当前也用完了或者首次使用page，则分配一个页,并头插进pagelist中
-            if (page == nullptr || page->block_num == 0) {
-                page = this->GetNewPage(block_size, blockNum_prePage,MemoryManager::alignment);
-                ASSERT(page != nullptr);
-                page->next = pagelist;
-            }
+		if (pagelist == nullptr)
+		{
+			pagelist = this->GetNewPage(block_size, blockNum_prePage, MemoryManager::alignment);
+		}
 
-            ASSERT(page != nullptr);
-            result = page->Allocate();
-            // 如果当前页没有空余的块,则查找下一个页
-            if (result == nullptr) {
-                ASSERT("address memory is filled");
-            }
-        }
+		// 当前的页
+		Page* page = pagelist;
+		// 记录上一节点
+		Page* last = nullptr;
 
-        pagelist = page;
+		while (result == nullptr)
+		{
+			// 如果当前page为空，说明已经走到末尾也没有空闲的块
+			if (page == nullptr)
+			{
+				page = this->GetNewPage(block_size, blockNum_prePage, MemoryManager::alignment);
+				ASSERT(page != nullptr);
 
-        return result;
-    }
+				// 将最后一个节点与新创建的节点链接
+				last->next = page;
 
-    Page* Allocator::GetNewPage(unsigned int block_size, unsigned int block_num_per_page, unsigned int alignment) {
-        return Page::GetNewPage(block_size, blockNum_prePage,alignment);
-    }
+			}
+			// 如果当前page已经用完了，则跳转到下一个page
+			else if (page->block_num == 0)
+			{
+				last = page;
+				page = page->next;
+			}
+			else
+			{
+				result = page->Allocate();
+				ASSERT(result != nullptr);
+			}
+
+		}
+		return result;
+	}
+
+	inline Page* Allocator::GetNewPage(unsigned int block_size, unsigned int block_num_per_page, unsigned int alignment) {
+		return Page::GetNewPage(block_size, blockNum_prePage, alignment);
+	}
 
 } // TinyRenderer

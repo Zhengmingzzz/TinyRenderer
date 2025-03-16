@@ -35,6 +35,7 @@ namespace TinyRenderer {
 		size_t extension_size = block_num_per_page * block_size + alignment + sizeof(Page);
 
 		void* ptr = malloc(extension_size);
+		ASSERT(ptr != nullptr);
 
 		// 将这块内存第一部分解释成Page类型
 		Page* new_page = reinterpret_cast<Page*>(ptr);

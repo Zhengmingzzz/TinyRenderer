@@ -108,14 +108,10 @@ namespace TinyRenderer {
         }
         // 使用头插法
         else {
-            // 当前page中freelist所指的首个block
-            Idx_block* blocklist = reinterpret_cast<Idx_block*>(this->freelist);
             // 将要释放的地址解释为block类型
-            Idx_block* cur_block = reinterpret_cast<Idx_block*>(rawAddress);
-
+            Idx_block* cur_block = reinterpret_cast<Idx_block*>(rawAddress); 
             // 将需要释放的地址链接至末尾
             cur_block->next_block = Idx_block::GetIdx(this->freelist, userMemory, block_size);
-
             // 更改Page的blocklist指针
             this->freelist = cur_block;
         }

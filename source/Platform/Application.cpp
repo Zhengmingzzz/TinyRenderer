@@ -3,10 +3,6 @@
 #include "Function/MemoryManager/MemoryManager.h"
 #include "Function/StopWatch/StopWatch.h"
 
-
-
-using namespace std::chrono;
-
 void* operator new(size_t size)
 {
 	return TinyRenderer::MemoryManager::GetInstance().Allocate(size);
@@ -37,14 +33,25 @@ namespace TinyRenderer
 		TerminalEngine();
 		return 0;
 	}
+
+	bool WindowsApplication::InitialEngine()
+	{
+		MemoryManager::GetInstance().StartUp(8, 2048);
+
+		return true;
+	}
+
+
 	bool WindowsApplication::Run()
 	{
+		// TODO: 实现Debug_MemoryMananger记录关键信息
+		// TODO: 修改StopWatch逻辑，希望能计算出某段代码块总的运行时间
 		StopWatch_Begin(start);
-		char* c[1000];
-		int* d[1000];
+		char* c[10000];
+		int* d[10000];
 		int c_cnt = -1;
 		int i_cnt = -1;
-		for (int i=0;i<1000000;i++) {
+		for (int i=0;i<10000000;i++) {
 			if (rand() % 2 == 0)
 			{
 				if (rand() % 2 == 0)
@@ -100,12 +107,7 @@ namespace TinyRenderer
 
 		return true;
 	}
-	bool WindowsApplication::InitialEngine()
-	{
-		MemoryManager::GetInstance().StartUp(8,2048);
 
-		return true;
-	}
 	bool WindowsApplication::TerminalEngine()
 	{
 		MemoryManager::GetInstance().ShutDown();
