@@ -10,6 +10,7 @@
 
 namespace TinyRenderer {
     unsigned char Page::pageNum = 0;
+
     void Page::StartUp(unsigned int blockNum_perPage, unsigned int block_size, void* userMemory) {
         this->block_num= blockNum_perPage;
         this->pageID = Page::pageNum++;
@@ -33,9 +34,8 @@ namespace TinyRenderer {
     }
 
     void Page::ShutDown() {
-        PageManager::GetInstance().FreePage(pageID);
+        PageManager::GetInstance()->FreePage(pageID);
     }
-
 
     void Page::LinkBlock_Ptr(unsigned int block_num, unsigned int block_size, void* address) {
         unsigned char* uc_address = reinterpret_cast<unsigned char*>(address);
@@ -118,11 +118,11 @@ namespace TinyRenderer {
         block_num++;
     }
 
-    Page *Page::GetNewPage(unsigned int block_size, unsigned int blockNum_perPage, unsigned int alignment) {
+    Page* Page::GetNewPage(unsigned int block_size, unsigned int blockNum_perPage, unsigned int alignment) {
         ASSERT(block_size > 0);
         ASSERT(blockNum_perPage > 0);
 
-        return PageManager::GetInstance().AllocNewPage(block_size, blockNum_perPage,alignment);
+        return PageManager::GetInstance()->AllocNewPage(block_size, blockNum_perPage,alignment);
     }
 
 

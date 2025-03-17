@@ -6,29 +6,49 @@
 #include "Function/Message/Message.h"
 #include "MemoryManager.h"
 
-namespace TinyRenderer {
-	const unsigned char PageManager::mallocFlag = 0xff;
-	std::unordered_map<unsigned char, Page*> PageManager::pageMap;
+namespace TinyRenderer 
+{
+	
+	void PageManager::ShutDown()
+	{
+		if (pageMap.size() > 0)
+		{
+			LOG_ERROR("page still exist");
+		}
+		delete GetInstance();
+	}
 
-	PageManager& PageManager::GetInstance() {
-		static PageManager instance;
+	PageManager* PageManager::GetInstance() 
+	{
+		static PageManager* instance = nullptr;
+		if (instance == nullptr)
+		{
+			MemoryManager::isEnable = false;
+			instance = new PageManager();
+			MemoryManager::isEnable = true;
+		}
 		return instance;
 	}
-	Page* PageManager::SearchPage(unsigned char pageID) {
+	Page* PageManager::SearchPage(unsigned char pageID) 
+	{
 		return pageMap[pageID];
 	}
-	void PageManager::RecordPage(unsigned char pageID, Page* page) {
-		if (pageMap.find(pageID) == pageMap.end()) {
+	void PageManager::RecordPage(unsigned char pageID, Page* page) 
+	{
+		if (pageMap.find(pageID) == pageMap.end()) 
+		{
 			MemoryManager::isEnable = false;
 			pageMap[pageID] = page;
 			MemoryManager::isEnable = true;
 		}
-		else {
+		else 
+		{
 			LOG_ERROR("Page already exists :" + pageID);
 		}
 	}
 
-	Page* PageManager::AllocNewPage(unsigned int block_size, unsigned int block_num_per_page, unsigned int alignment) {
+	Page* PageManager::AllocNewPage(unsigned int block_size, unsigned int block_num_per_page, unsigned int alignment) 
+	{
 		ASSERT(alignment % 2 == 0)
 		// 设置对齐值为最小的一个
 		alignment = alignment > block_size ? block_size : alignment;
@@ -48,18 +68,21 @@ namespace TinyRenderer {
 
 		new_page->StartUp(block_num_per_page, block_size, alignedAddress);
 		// 获取pageID后需要向PageManager注册，方便查找
-		PageManager::GetInstance().RecordPage(new_page->pageID, new_page);
+		PageManager::GetInstance()->RecordPage(new_page->pageID, new_page);
 		return new_page;
 	}
 
-	void PageManager::FreePage(unsigned char pageID) {
-		if (pageMap.find(pageID) == pageMap.end()) {
+	void PageManager::FreePage(unsigned char pageID) 
+	{
+		if (pageMap.find(pageID) == pageMap.end()) 
+		{
 			LOG_ERROR("Page not found :" + pageID);
 		}
 		Page* page = pageMap[pageID];
 		pageMap.erase(pageID);
 
-		if (page != NULL) {
+		if (page != NULL) 
+		{
 			free(page);
 		}
 	}

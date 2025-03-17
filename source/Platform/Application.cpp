@@ -1,14 +1,23 @@
 #include "Application.h"
 #include "Function/Message/Message.h"
 #include "Function/MemoryManager/MemoryManager.h"
-#include "Function/StopWatch/StopWatch.h"
+#include "Function/StopWatch/StopWatchManager.h"
+#include <cstdlib>
 
 void* operator new(size_t size)
 {
 	return TinyRenderer::MemoryManager::GetInstance().Allocate(size);
 }
 
-void operator delete(void* ptr, size_t)
+void operator delete(void* ptr, size_t) noexcept
+{
+	TinyRenderer::MemoryManager::GetInstance().Deallocate(ptr);
+}
+void* operator new[](size_t size)
+{
+	return TinyRenderer::MemoryManager::GetInstance().Allocate(size);
+}
+void operator delete[](void* ptr, size_t size) noexcept
 {
 	TinyRenderer::MemoryManager::GetInstance().Deallocate(ptr);
 }
@@ -37,21 +46,18 @@ namespace TinyRenderer
 	bool WindowsApplication::InitialEngine()
 	{
 		MemoryManager::GetInstance().StartUp(8, 2048);
+		StopWatchManager::GetInstance()->StartUp();
 
 		return true;
 	}
 
-
-	bool WindowsApplication::Run()
+	void MemMgr_test()
 	{
-		// TODO: 实现Debug_MemoryMananger记录关键信息
-		// TODO: 修改StopWatch逻辑，希望能计算出某段代码块总的运行时间
-		StopWatch_Begin(start);
 		char* c[10000];
 		int* d[10000];
 		int c_cnt = -1;
 		int i_cnt = -1;
-		for (int i=0;i<10000000;i++) {
+		for (int i = 0; i < 10000000; i++) {
 			if (rand() % 2 == 0)
 			{
 				if (rand() % 2 == 0)
@@ -100,16 +106,21 @@ namespace TinyRenderer
 				delete d[i];
 			}
 		}
-		StopWatch_End(start);
-		StopWatch_milliseconds(start);
+	}
 
 
-
+	bool WindowsApplication::Run()
+	{
+		StopWatch_Start(application);
+			MemMgr_test();
+		StopWatch_Pause(application);
+		StopWatch_Microseconds(application);
 		return true;
 	}
 
 	bool WindowsApplication::TerminalEngine()
 	{
+		StopWatchManager::GetInstance()->ShutDown();
 		MemoryManager::GetInstance().ShutDown();
 		return true;
 	}

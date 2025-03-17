@@ -19,17 +19,7 @@ namespace TinyRenderer
 			begin_time_ = std::chrono::system_clock::now();
 			state_ = State::RUNNING;
 		}
-		void Stop()
-		{
-			if (state_ == State::PAUSED || state_ == State::STOPPED)
-			{
-				LOG_WARN("Stopwatch is already stopped");
-				return;
-			}
-			auto now = std::chrono::system_clock::now();
-			accumulated_time_ += now - begin_time_;
-			state_ = State::STOPPED;
-		}
+
 		void Pause()
 		{
 			if (state_ == State::PAUSED || state_ == State::STOPPED)
@@ -42,14 +32,20 @@ namespace TinyRenderer
 			state_ = State::PAUSED;
 		}
 
+		// ÔÝÍ£ºó¼ÌÐø
 		void Restart()
 		{
+			if (state_ == State::RUNNING)
+			{
+				LOG_WARN("Stopwatch is already running");
+				return;
+			}
 			Start();
 		}
 
 		void Reset()
 		{
-			state_ = State::PAUSED;
+			state_ = State::STOPPED;
 			begin_time_ = std::chrono::system_clock::time_point();
 			accumulated_time_ = std::chrono::system_clock::duration();
 		}
@@ -80,7 +76,7 @@ namespace TinyRenderer
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªÎ¢Ãî
+			//×ªºÁÃî
 			return std::chrono::duration_cast<std::chrono::milliseconds>(accumulated_time_).count();
 		}
 		//Ãë
@@ -90,7 +86,7 @@ namespace TinyRenderer
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªÎ¢Ãî
+			//×ªÃî
 			return std::chrono::duration_cast<std::chrono::seconds>(accumulated_time_).count();
 		}
 	private:
@@ -98,31 +94,4 @@ namespace TinyRenderer
 		std::chrono::system_clock::duration accumulated_time_;
 		State state_;
 	};
-
-	#define StopWatch_Begin(arg_name) \
-			StopWatch stopWatch_##arg_name; \
-			stopWatch_##arg_name.Start();
-
-	#define StopWatch_End(arg_name) \
-			stopWatch_##arg_name.Stop();
-
-	#define StopWatch_Pause(arg_name) \
-			stopWatch_##arg_name.Pause();
-
-	#define StopWatch_Reset(arg_name) \
-			stopWatch_##arg_name.Reset();
-
-	#define StopWatch_microseconds(arg_name) \
-			LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name.microseconds() << " microseconds")
-
-			
-	#define StopWatch_milliseconds(arg_name) \
-			LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name.milliseconds() << " milliseconds")
-
-	#define StopWatch_seconds(arg_name) \
-			LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name.seconds() << " seconds")
-
-	#define StopWatch_nanoseconds(arg_name) \
-	LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name.nanoseconds() << " nanoseconds")
-
 } // namespace TinyRenderer

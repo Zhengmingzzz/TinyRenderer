@@ -26,10 +26,6 @@ namespace TinyRenderer {
 		}
 	}
 
-	void Allocator::ShutDown() {
-		FreeAllPage();
-	}
-
 	void Allocator::FreeAllPage()
 	{
 		while (pagelist != nullptr)

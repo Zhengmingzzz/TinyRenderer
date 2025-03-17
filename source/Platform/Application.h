@@ -1,4 +1,9 @@
 #pragma once
+#include <cstddef>
+void* operator new(size_t size);
+void operator delete(void* ptr, size_t size) noexcept;
+void* operator new[](size_t size);
+void operator delete[](void* ptr, size_t size) noexcept;
 namespace TinyRenderer
 {
 	#define DEBUG_MODE 1

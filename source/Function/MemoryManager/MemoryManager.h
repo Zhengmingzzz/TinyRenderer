@@ -4,6 +4,7 @@
 #pragma once
 #include <cstddef>
 #include "Allocator.h"
+#include <cmath>
 namespace TinyRenderer {
   /// <summary>
   /// 页内元素最小为
