@@ -1,6 +1,6 @@
 #include "Application.h"
 #include "Function/Message/Message.h"
-#include "Function/MemoryManager/MemoryManager.h"
+#include "Core/MemoryManager/MemoryManager.h"
 #include "Function/StopWatch/StopWatchManager.h"
 #include <cstdlib>
 
@@ -111,10 +111,10 @@ namespace TinyRenderer
 
 	bool WindowsApplication::Run()
 	{
-		StopWatch_Start(application);
+		/*StopWatch_Start(application);
 			MemMgr_test();
 		StopWatch_Pause(application);
-		StopWatch_Microseconds(application);
+		StopWatch_Microseconds(application);*/
 		return true;
 	}
 

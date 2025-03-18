@@ -66,7 +66,7 @@ namespace TinyRenderer
 				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
 				if(stopWatch_##arg_name != nullptr) \
 				{ \
-					LOG_INFO("stopWatch"#arg_name << " ºÄÊ±:" << stopWatch_##arg_name->microseconds() << " Î¢Ãë"); \
+					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->microseconds() << " microseconds"); \
 				} \
 			}while(0);
 
@@ -76,7 +76,7 @@ namespace TinyRenderer
 				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
 				if(stopWatch_##arg_name != nullptr) \
 				{ \
-					LOG_INFO("stopWatch"#arg_name << " ºÄÊ±:" << stopWatch_##arg_name->milliseconds() << " ºÁÃë"); \
+					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->milliseconds() << " millionseconds"); \
 				} \
 			}while (0);
 
@@ -85,7 +85,7 @@ namespace TinyRenderer
 				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
 				if(stopWatch_##arg_name != nullptr) \
 				{ \
-					LOG_INFO("stopWatch"#arg_name << " ºÄÊ±:" << stopWatch_##arg_name->seconds() << " Ãë"); \
+					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->seconds() << " seconds"); \
 				} \
 			}while(0);
 } // namespace TinyRenderer
