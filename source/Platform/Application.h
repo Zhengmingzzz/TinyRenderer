@@ -1,19 +1,21 @@
 #pragma once
 #include <cstddef>
-void* operator new(size_t size);
-void operator delete(void* ptr, size_t size) noexcept;
-void* operator new[](size_t size);
-void operator delete[](void* ptr, size_t size) noexcept;
+#include <mutex>
+
+// void* operator new(size_t size);
+// void operator delete(void* ptr, size_t size) noexcept;
+// void* operator new[](size_t size);
+// void operator delete[](void* ptr, size_t size) noexcept;
+
 namespace TinyRenderer
 {
-	#define DEBUG_MODE 1
 	/// <summary>
 	/// 定义引擎初始化顺序
 	/// </summary>
 	class Application
 	{
 	public:
-		virtual Application* GetInstance() = 0;
+		virtual Application* instance() = 0;
 		/// <summary>
 		/// 引擎的主函数
 		/// </summary>
@@ -26,15 +28,16 @@ namespace TinyRenderer
 		virtual ~Application() = default;
 	protected:
 		//应用程序单例
-		static Application* instance;
+		static Application* instance_;
 		Application() {};
+
 
 	};
 
 	class WindowsApplication : public Application
 	{
 	public:
-		Application* GetInstance() override;
+		Application* instance() override;
 		int Main(int argc, char** argv) override;
 
 		

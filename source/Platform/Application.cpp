@@ -4,32 +4,32 @@
 #include "Function/StopWatch/StopWatchManager.h"
 #include <cstdlib>
 
-void* operator new(size_t size)
-{
-	return TinyRenderer::MemoryManager::GetInstance().Allocate(size);
-}
-
-void operator delete(void* ptr, size_t) noexcept
-{
-	TinyRenderer::MemoryManager::GetInstance().Deallocate(ptr);
-}
-void* operator new[](size_t size)
-{
-	return TinyRenderer::MemoryManager::GetInstance().Allocate(size);
-}
-void operator delete[](void* ptr, size_t size) noexcept
-{
-	TinyRenderer::MemoryManager::GetInstance().Deallocate(ptr);
-}
+// void* operator new(size_t size)
+// {
+// 	return TinyRenderer::MemoryManager::instance().Allocate(size);
+// }
+//
+// void operator delete(void* ptr, size_t) noexcept
+// {
+// 	TinyRenderer::MemoryManager::instance().Deallocate(ptr);
+// }
+// void* operator new[](size_t size)
+// {
+// 	return TinyRenderer::MemoryManager::instance().Allocate(size);
+// }
+// void operator delete[](void* ptr, size_t size) noexcept
+// {
+// 	TinyRenderer::MemoryManager::instance().Deallocate(ptr);
+// }
 
 namespace TinyRenderer
 {
-	Application* Application::instance = nullptr;
-	Application* WindowsApplication::GetInstance()
+	Application* Application::instance_ = nullptr;
+	Application* WindowsApplication::instance()
 	{
-		if (instance == nullptr)
-			instance = new WindowsApplication();
-		return instance;
+		if (instance_ == nullptr)
+			instance_ = new WindowsApplication();
+		return instance_;
 	};
 	
 	int WindowsApplication::Main(int argc, char** argv)
@@ -45,83 +45,24 @@ namespace TinyRenderer
 
 	bool WindowsApplication::InitialEngine()
 	{
-		MemoryManager::GetInstance().StartUp(8, 2048);
-		StopWatchManager::GetInstance()->StartUp();
+		//MemoryManager::instance().startUp(8, 2048);
+		StopWatchManager::instance().startUp();
 
 		return true;
 	}
 
-	void MemMgr_test()
-	{
-		char* c[10000];
-		int* d[10000];
-		int c_cnt = -1;
-		int i_cnt = -1;
-		for (int i = 0; i < 10000000; i++) {
-			if (rand() % 2 == 0)
-			{
-				if (rand() % 2 == 0)
-				{
-					c_cnt++;
-					c[c_cnt] = new char;
-				}
-				else
-				{
-					i_cnt++;
-					d[i_cnt] = new int;
-				}
-			}
-			else
-			{
-				if (rand() % 2 == 0)
-				{
-					if (c_cnt > -1)
-					{
-						delete c[c_cnt];
-						c_cnt--;
-					}
-				}
-				else
-				{
-					if (i_cnt > -1)
-					{
-						delete d[i_cnt];
-						i_cnt--;
-					}
-				}
-			}
-		}
-
-		if (c_cnt != -1)
-		{
-			for (int i = 0; i <= c_cnt; i++)
-			{
-				delete c[i];
-			}
-		}
-		if (i_cnt != -1)
-		{
-			for (int i = 0; i <= i_cnt; i++)
-			{
-				delete d[i];
-			}
-		}
-	}
 
 
 	bool WindowsApplication::Run()
 	{
-		/*StopWatch_Start(application);
-			MemMgr_test();
-		StopWatch_Pause(application);
-		StopWatch_Microseconds(application);*/
+
 		return true;
 	}
 
 	bool WindowsApplication::TerminalEngine()
 	{
-		StopWatchManager::GetInstance()->ShutDown();
-		MemoryManager::GetInstance().ShutDown();
+		StopWatchManager::instance().shutDown();
+		//MemoryManager::instance().shutDown();
 		return true;
 	}
 }

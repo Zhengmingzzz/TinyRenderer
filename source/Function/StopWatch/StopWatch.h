@@ -5,17 +5,13 @@ namespace TinyRenderer
 {
 	class StopWatch
 	{
-		enum class State { STOPPED, RUNNING, PAUSED };
 	public:
+		enum class State { STOPPED, RUNNING, PAUSED };
+
 		StopWatch() :begin_time_(std::chrono::system_clock::time_point()), accumulated_time_(std::chrono::system_clock::duration()), state_(State::PAUSED) {};
 		~StopWatch() {};
 		void Start()
 		{
-			if (state_ == State::RUNNING)
-			{
-				LOG_WARN("Stopwatch is already running");
-				return;
-			}
 			begin_time_ = std::chrono::system_clock::now();
 			state_ = State::RUNNING;
 		}
@@ -89,6 +85,8 @@ namespace TinyRenderer
 			//ЧЄГо
 			return std::chrono::duration_cast<std::chrono::seconds>(accumulated_time_).count();
 		}
+
+		inline State getState() const { return state_; }
 	private:
 		std::chrono::system_clock::time_point begin_time_;
 		std::chrono::system_clock::duration accumulated_time_;

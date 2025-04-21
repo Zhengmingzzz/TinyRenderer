@@ -1,49 +1,41 @@
 //
-// Created by Administrator on 25-3-12.
+// Created by Administrator on 25-4-16.
 //
 #pragma once
+#include <cstdint>
 #include "Function/Message/Message.h"
-namespace TinyRenderer
-{
-	// 用于管理链接比指针类型小的块,索引从0开始
-	struct Idx_block
-	{
-		// 下一个块所在的索引,索引范围为[0,65535],0xffff块不允许分配，表示空索引
-		unsigned short next_block;
 
-		// （当前地址 - 将用户空间首地址）/ block_size 得到从0开始的索引
-		// 如果传入一个空地址，则返回0xffff
-		static unsigned short GetIdx(void* cur_address, void* userMemory_address, unsigned int block_size)
-		{
-			ASSERT(userMemory_address != nullptr);
-			unsigned short res = 0xffff;
-			if (cur_address != nullptr)
-			{
-				unsigned char* uc_cur_address = reinterpret_cast<unsigned char*>(cur_address);
-				unsigned char* uc_userMemory_address = reinterpret_cast<unsigned char*>(userMemory_address);
-				res = (uc_cur_address - uc_userMemory_address) / block_size;
-			}
+namespace TinyRenderer {
 
-			return res;
-		}
+    class Block {
+    public:
+        unsigned char next_idx_; // 使用原子变量保证原子性，防止多个线程同时修改
 
-		// idx从0开始，公式为(idx * block_size) + userMemoeyAddress
-		static Idx_block* GetAddress(unsigned short idx, void* userMemory_address, unsigned int block_size)
-		{
-			ASSERT(idx >= 0 && idx <= 0xffff);
-			ASSERT(block_size >= 2);
-			ASSERT(userMemory_address != nullptr);
-			Idx_block* res = nullptr;
-			unsigned char* uc_userMemory_address = nullptr;
+        // 计算当前块的索引值
+        unsigned int get_index(void* user_memory, unsigned int block_size) {
+            ASSERT(user_memory != nullptr);
+            ASSERT(block_size > 0);
+            ASSERT(user_memory <= this);
 
-			if (idx != 0xffff)
-				uc_userMemory_address = reinterpret_cast<unsigned char*>(userMemory_address);
-			return reinterpret_cast<Idx_block*>((idx * block_size) + uc_userMemory_address);
-		}
-	};
+            unsigned char res = 0xff;
+            uintptr_t head_addr = reinterpret_cast<uintptr_t>(user_memory);
+            uintptr_t cur_addr = reinterpret_cast<uintptr_t>(this);
+            if (cur_addr >= head_addr)
+                res = (cur_addr - head_addr) / block_size;
+            return res;
+        }
+        // 根据信息返回index块的首地址
+        static Block* get_block(void* user_memory, unsigned int index, unsigned int block_size, unsigned int max_index) {
+            ASSERT(user_memory != nullptr);
+            ASSERT(block_size > 0);
+            ASSERT(index >= 0);
+            if (index > max_index)
+                return nullptr;
+            uintptr_t head_addr = reinterpret_cast<uintptr_t>(user_memory);
+            Block* res = reinterpret_cast<Block*>(head_addr + index*block_size);
+            return res;
+        }
+    };
 
-	// 管理>=指针类型的块
-	struct Ptr_block {
-		Ptr_block* next;
-	};
-}
+} // TinyRenderer
+

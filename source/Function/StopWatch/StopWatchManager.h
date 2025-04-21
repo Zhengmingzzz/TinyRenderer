@@ -8,84 +8,93 @@ namespace TinyRenderer
 	class StopWatchManager
 	{
 	public:
-		static StopWatchManager* GetInstance();
+		static StopWatchManager& instance();
 
-		void StartUp();
+		void startUp();
 
-		void ShutDown();
+		void shutDown();
 
+		StopWatch* create_stopWatch(const char* name);
 
-		StopWatch* CreateStopWatch(const char* name);
+		StopWatch* get_stopWatch(const char* name);
 
-		StopWatch* GetStopWatch(const char* name);
-
-		~StopWatchManager() {};
+		~StopWatchManager() = default;
 	private:
-		static StopWatchManager* instance;
-		std::unordered_map<std::string, StopWatch*> stopWatchMap;
+		std::unordered_map<std::string, StopWatch*> stopWatchMap_;
 
 		StopWatchManager() {};
+	public:
 		StopWatchManager(const StopWatchManager&) = delete;
 		StopWatchManager& operator=(const StopWatchManager&) = delete;
-
-
 	};
-
-	#define StopWatch_Start(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name == nullptr) \
-				{ \
-					stopWatch_##arg_name = StopWatchManager::GetInstance()->CreateStopWatch(#arg_name); \
-				} \
-				stopWatch_##arg_name->Start(); \
-			}while(0);
-
-	#define StopWatch_Pause(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name != nullptr) \
-				{ \
-					stopWatch_##arg_name->Pause(); \
-				}\
-			}while (0);
-
-
-	#define StopWatch_Reset(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name != nullptr) \
-				{ \
-					stopWatch_##arg_name->Reset(); \
-				} \
-			}while(0);
-
-			// Œ¢√Î
-	#define StopWatch_Microseconds(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name != nullptr) \
-				{ \
-					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->microseconds() << " microseconds"); \
-				} \
-			}while(0);
-
-			// ∫¡√Î
-	#define StopWatch_Milliseconds(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name != nullptr) \
-				{ \
-					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->milliseconds() << " millionseconds"); \
-				} \
-			}while (0);
-
-	#define StopWatch_Seconds(arg_name) \
-			do{ \
-				StopWatch* stopWatch_##arg_name = StopWatchManager::GetInstance()->GetStopWatch(#arg_name); \
-				if(stopWatch_##arg_name != nullptr) \
-				{ \
-					LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->seconds() << " seconds"); \
-				} \
-			}while(0);
 } // namespace TinyRenderer
+#define StopWatch_Start(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name == nullptr) \
+			{ \
+				stopWatch_##arg_name = StopWatchManager::instance().create_stopWatch(#arg_name); \
+			} \
+			if(stopWatch_##arg_name->getState() == StopWatch::State::RUNNING){ \
+				LOG_WARN(#arg_name << " Stopwatch is already running");} \
+			else \
+				stopWatch_##arg_name->Start(); \
+		}while(0);
+
+#define StopWatch_Pause(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name != nullptr) \
+			{ \
+				if(stopWatch_##arg_name->getState() == StopWatch::State::PAUSED || stopWatch_##arg_name->getState() == StopWatch::State::STOPPED) \
+					{LOG_WARN(#arg_name << "Stopwatch is already paused");} \
+				else \
+					stopWatch_##arg_name->Pause(); \
+			}\
+			else \
+			{ \
+				LOG_WARN(#arg_name << " is not exist in stopWatchMap_"); \
+			} \
+		}while (0);
+
+
+#define StopWatch_Reset(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name != nullptr) \
+			{ \
+				stopWatch_##arg_name->Reset(); \
+			} \
+		}while(0);
+
+		// Œ¢√Î
+#define StopWatch_Microseconds(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name != nullptr) \
+			{ \
+				LOG_INFO("stopWatch__"#arg_name << " cost:" << stopWatch_##arg_name->microseconds() << " microseconds"); \
+			} \
+			else{ \
+				LOG_WARN("stopWatch__"#arg_name << " not exist"); \
+			} \
+		}while(0);
+
+		// ∫¡√Î
+#define StopWatch_Milliseconds(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name != nullptr) \
+			{ \
+				LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->milliseconds() << " millionseconds"); \
+			} \
+		}while (0);
+
+#define StopWatch_Seconds(arg_name) \
+		do{ \
+			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
+			if(stopWatch_##arg_name != nullptr) \
+			{ \
+				LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->seconds() << " seconds"); \
+			} \
+		}while(0);

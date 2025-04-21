@@ -1,42 +1,60 @@
 //
-// Created by Administrator on 25-3-11.
+// Created by Administrator on 25-4-16.
 //
 #pragma once
-#include "Block.h"
+
+#include "Core/Lock/SpinLock.h"
+#include "Function/Message/Message.h"
+
 
 namespace TinyRenderer {
 
-class Page {
-public:
-    friend class PageManager;
-    bool isPtrBlock;
-    // 剩余block数量
-    unsigned int block_num;
-    // 本页block
-    unsigned int block_size;
-    Page* next;
-public:
-    static Page* GetNewPage(unsigned int block_size, unsigned int blockNum_perPage, unsigned int alignment);
+    class Block;
+    class Allocator;
+    class Page {
+    public:
+        static inline constexpr int DEFAULT_ALIGNMENT = 8;
+        Page* next;
+        Page* prev;
+        Block* freelist_;
+        int current_block_num_;
+        int total_block_num_;
+        int block_size_;
 
-    void StartUp(unsigned int blockNum_perPage, unsigned int block_size, void* userMemory);
-    void ShutDown();
+        Allocator* owner_;
+    private:
+        static inline constexpr uint8_t END_MARKER = 0xff;
+        SpinLock page_spinlock_; // 操作freelist_时(分配/释放内存)，需要上锁
+        Block* user_address_; // 内存申请时分配的地址
 
-    void* Allocate();
-    void Deallocate(void* rawAddress);
-private:
-    // 内存块的上1字节用于存储pageID，所以pageNum最大不超过0xff
-    static unsigned char pageNum;
-    // page的唯一识别号
-    unsigned char pageID;
-    // 用户空间距离首地址的偏移量
-    void* userMemory;
-    // 首个block块的地址，block有两种类型，因此用void*代替
-    // 用于在Page.Deallocate中解释为特定类型并链接
-    void* freelist;
 
-    // 用于初始化时链接块,block_num表示从1开始的块的个数,ptr代表整个空间的首地址
-    static void LinkBlock_Ptr(unsigned int block_num,unsigned int block_size, void* ptr);
-    static void LinkBlock_Idx(unsigned int block_num, unsigned int block_size, void* ptr);
-};
+    public:
+        void startUp(int block_size, int block_num,  void* user_address, Allocator* owner_);
+        void shutDown();
+        static Page* allocate_newPage(int block_size, int block_num, Allocator* owner_, int alignment = DEFAULT_ALIGNMENT);
+
+        bool try_allocate_block(void*& res);
+        bool try_deallocate_block(Block* block);
+        // 判断block地址是否属于这个页
+        inline bool is_belongTo(Block* block) {
+            ASSERT(block != nullptr);
+            //1.判断block是否属于当前page
+            std::uintptr_t block_address = reinterpret_cast<uintptr_t>(block);
+            std::uintptr_t user_address = reinterpret_cast<uintptr_t>(this->user_address_);
+            if (!(block_address >= user_address && block_address <= user_address + block_size_ * total_block_num_ - 1)) {
+                return false;
+            }
+            return true;
+        }
+
+        // 判断是否有剩余块
+        inline bool is_block_available() {
+            return current_block_num_ > 0;
+        }
+
+    private:
+        static void link_freelist(Block* user_address, int block_size, int block_num); // 提供首地址，每个块的大小和数量，连接每个块
+    };
 
 } // TinyRenderer
+

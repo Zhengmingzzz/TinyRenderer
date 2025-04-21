@@ -13,8 +13,21 @@ include_directories("example")
 add_compile_definitions("TinyRenderer_Root_Path=${CMAKE_SOURCE_DIR}")
 
 
+
 file(GLOB_RECURSE engine_cpp source/*.cpp source/*.h)
 file(GLOB_RECURSE example_cpp example/*.cpp example/*.h)
 
 
 add_executable(${PROJECT_NAME} "source/main.cpp" ${engine_cpp} ${example_cpp})
+
+# 是否开启DEBUG模式
+option(ENABLE_DEBUG "Enable debug mode with assertions and logs" ON)
+if(ENABLE_DEBUG)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _DEBUG)
+endif()
+
+# 是否开启RELEASE模式
+option(ENABLE_RELEASE "Enable release optimizations" OFF)
+if(ENABLE_RELEASE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _RELEASE)
+endif()

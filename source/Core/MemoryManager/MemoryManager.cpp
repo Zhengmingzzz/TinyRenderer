@@ -1,115 +1,157 @@
 //
-// Created by Administrator on 25-3-11.
+// Created by Administrator on 25-4-15.
 //
 
 #include "MemoryManager.h"
-#include "Page.h"
-#include <cstdlib>
-#include "Function/Message/Message.h"
 
-#include "Core/MemoryManager/PageManager.h"
+#include <cmath>
+#include <memory>
+#include <mutex>
+#include <glm/exponential.hpp>
+#include <windows.h>
+#include <psapi.h>
 
 namespace TinyRenderer {
-    // 必须为2的次方数
 
-    unsigned int MemoryManager::allocator_num;
-    unsigned int MemoryManager::alignment = 8;
-    unsigned int MemoryManager::max_userCapacity = 1024;
-    bool MemoryManager::isEnable = false;
-    unsigned char MemoryManager::mallocFlag = 0xff;
-
-    void MemoryManager::StartUp() {
-		PageManager::GetInstance()->StartUp();
-        StartUp(alignment, max_userCapacity);
+    MemoryManager& MemoryManager::instance() {
+        static MemoryManager* instance = nullptr;
+        std::call_once(instance_flag_, [&]() {
+            instance = new MemoryManager();
+        });
+        return *instance;
     }
 
-    void MemoryManager::StartUp(unsigned int alignment, unsigned int allocator_num, unsigned int max_userCapacity) 
-    {
-        ASSERT(max_userCapacity % 2 == 0);
-        // max_userCapacity 最大只能为2的14次方，大于则会让2字节块索引失效
-        ASSERT(max_userCapacity <= 9182);
-        this->alignment = alignment;
-        this->allocator_num = allocator_num;
-        this->max_userCapacity = max_userCapacity;
-
-        allocator = static_cast<Allocator *>(malloc(sizeof(Allocator) * allocator_num));
-        ASSERT(allocator != nullptr);
-        for (int i=0; i < allocator_num; i++) 
-        {
-            allocator[i].StartUp(i+1, max_userCapacity);
+    void MemoryManager::startUp() {
+        MemoryManager& memoryManager = MemoryManager::instance();
+        // 从2的0次方一直到2的MAX_TWOPOWERI次方
+        size_t block_size = 1;
+        for (int i = 0; i <= MAX_TWOPOWERI; i++) {
+            allocators_[i] = std::make_unique<Allocator>();
+            allocators_[i]->startUp(block_size, 10, (MAX_TWOPOWERI - i + 1) * 2); // 每个allocator根据分配块的大小，限制它的每页最大块数
+            block_size <<= 1;
         }
-        isEnable = true;
+
+        // 初始化平滑系数和平均值
+        ewma_occupancy_.smoothing_factor_=0.7f;
+        ewma_occupancy_.average_occupancy_=0.0f;
+
+        occupancy_level_ = Occupancy_level::low; // 一开始先设置低级别的内存占用率
     }
 
-    void MemoryManager::ShutDown() 
-    {
-		// 释放所有allocator中的所有page内存
-        for (int i=0; i < allocator_num; i++) 
-        {
-            allocator[i].ShutDown();
+    void MemoryManager::shutDown() {
+        MemoryManager& memoryManager = MemoryManager::instance();
+        for (int i = 0; i <= MAX_TWOPOWERI; i++) {
+            allocators_[i]->shutDown();
+            allocators_[i].release();
         }
-        free(allocator);
-        // 释放完所有page后再释放PageManager
-        PageManager::GetInstance()->ShutDown();
-        isEnable = false;
+        delete &memoryManager;
     }
 
-    void* MemoryManager::Allocate(size_t size) 
-    {
-        ASSERT(size > 0);
+    void* MemoryManager::allocate(size_t size) {
+        ASSERT(size>0)
 
-        // 多分配1字节用于存储pageID
-        size += 1;
-
-        // 查找size适合在哪一个分配器分配内存
-        int alloc_idx = log(size) / log(2) - 1;
-        for (; alloc_idx <allocator_num; alloc_idx++) 
-        {
-            if (size <= allocator[alloc_idx].block_size) 
-            {
+        size_t twopoweri = MAX_TWOPOWERI + 1;
+        // 找到大于size的第一个allocator
+        for (int i=0;i<=MAX_TWOPOWERI;i++) {
+            if (allocators_[i]->block_size_<=size) {
+                twopoweri = i;
+            }
+            else
                 break;
+        }
+
+        void* res = nullptr;
+        // 超出内存池管理范围，直接使用malloc
+        if (twopoweri > MAX_TWOPOWERI) {
+            res = malloc(twopoweri);
+        }
+        else {
+            res = allocators_[twopoweri]->allocate();
+        }
+        return res;
+    }
+
+    void MemoryManager::deallocate(void* ptr) {
+        // 1.找到小于ptr的最大值
+        auto it = pages_.upper_bound(reinterpret_cast<Page*>(ptr));
+        if (it != pages_.begin()) {
+            --it;
+            Page* page = *it;
+            bool isRecycle_page = false;
+            // 2.如果try_dellocate返回true代表回收成功
+            if (page->owner_->try_dellocate(page, reinterpret_cast<Block*>(ptr), isRecycle_page)) {
+                // 如果删除了当前的page则去除pages的page数据
+                if (isRecycle_page) {
+                    pages_.erase(it);
+                }
+                return;
             }
         }
-        void* result = nullptr;
-        // allocator_num表示allocator的数量，过大的内存分配和销毁都不会很频繁，所以直接使用malloc
-        if (alloc_idx >= allocator_num || isEnable == false) 
-        {
-            result = malloc(size);
-            unsigned char* uc_ptr = reinterpret_cast<unsigned char*>(result);
-            // 把首个字节设置为最大值0xff表示使用malloc分配
-            *uc_ptr = mallocFlag;
-            result = uc_ptr + 1;
-        }
-        else 
-        {
-            result = allocator[alloc_idx].Allocate();
-        }
-
-        ASSERT(result != nullptr);
-        return result;
+        // 如果到这没有回收则调用free
+        free(ptr);
     }
 
-    void MemoryManager::Deallocate(void* ptr) {
-        // 查看ptr上一字节，获取这个block对应的page
-        unsigned char* uc_ptr = reinterpret_cast<unsigned char*>(ptr);
-        if (uc_ptr[-1] == MemoryManager::mallocFlag) {
-            free(reinterpret_cast<void*>(uc_ptr - 1));
-            return;
-        }
+    void MemoryManager::tick() {
+        // 每refresh_interval_次循环一次
+        static int frame_counter = 0;
+        frame_counter++;
 
-        // 当前收回的block所属的page
-        Page* page = PageManager::GetInstance()->SearchPage(uc_ptr[-1]);
-        if (page == nullptr) {
-            LOG_ERROR("page is nullptr");
+        for (int i=0;i<=MAX_TWOPOWERI;i++) {
+            allocators_[i]->tick();
         }
-
-        page->Deallocate(uc_ptr - 1);
+        // 如果帧计数器为0，触发刷新指标逻辑
+        if (frame_counter >= refresh_interval_) {
+            refreshMetrics();
+            for (int i=0;i<=MAX_TWOPOWERI;i++) {
+                allocators_[i]->refreshMetrics(occupancy_level_);
+            }
+        }
+        frame_counter %= refresh_interval_;
     }
 
-    MemoryManager& MemoryManager::GetInstance() {
-        static MemoryManager instance;
-        return instance;
+    void MemoryManager::refreshMetrics() {
+        // 获取系统虚拟内存占用率
+        PROCESS_MEMORY_COUNTERS pmc;
+        if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+            SIZE_T processVirtualUsed = pmc.PagefileUsage;
+
+            // 获取系统总虚拟内存
+            MEMORYSTATUSEX memStatus;
+            memStatus.dwLength = sizeof(memStatus);
+            if (GlobalMemoryStatusEx(&memStatus)) {
+                DWORDLONG totalVirtual = memStatus.ullTotalPageFile;
+
+                // 计算并输出比值
+                double ratio = static_cast<double>(processVirtualUsed) / totalVirtual;
+                ratio *= 100;
+                // 根据比值更改占用率
+                if (ratio < (double)Occupancy_level::medium) {
+                    occupancy_level_ = Occupancy_level::low;
+                    refresh_interval_ = 15;
+                }
+                else if (ratio > (double)Occupancy_level::high) {
+                    occupancy_level_ = Occupancy_level::high;
+                    refresh_interval_ = 10;
+                }
+                else {
+                    occupancy_level_ = Occupancy_level::medium;
+                    refresh_interval_ = 5;
+                }
+            }
+        }
+        else {
+            LOG_ERROR("system Memory occupancy calculate occur error!");
+        }
+
+
+        for (int i=0;i<=MAX_TWOPOWERI;i++) {
+            allocators_[i]->refreshMetrics(occupancy_level_);
+        }
     }
 
+    void MemoryManager::register_newPage(Page* new_page) {
+        std::lock_guard guard(registerPage_spinlock_);
+        pages_.insert(new_page);
+    }
 
 } // TinyRenderer

@@ -33,7 +33,7 @@ namespace TinyRenderer
 	};
 }
 
-#if DEBUG_MODE // 如果为debug模式，则开启assert
+#ifdef _DEBUG // 如果为debug模式，则开启assert
 #define ASSERT(expr) \
         if (!(expr)) { \
             assert(expr); \
@@ -61,13 +61,15 @@ do{ \
 
 #ifndef LOG_ERROR
 #define LOG_ERROR(msg) \
-do{ \
-	std::ostringstream _oss; \
-	_oss << msg << "\n" << "File:" << __FILE__ \
-	<< " Line: " << __LINE__ << "\n"; \
-	TinyRenderer::Message::LogError(_oss.str()); \
-}while(0); \
-ASSERT(false);
+{ \
+	do{ \
+		std::ostringstream _oss; \
+		_oss << msg << "\n" << "File:" << __FILE__ \
+		<< " Line: " << __LINE__ << "\n"; \
+		TinyRenderer::Message::LogError(_oss.str()); \
+	}while(0); \
+	ASSERT(false); \
+}
 #endif // !LOG_ERROR
 
 #else // 否则什么都不做

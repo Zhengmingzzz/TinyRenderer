@@ -2,55 +2,54 @@
 
 namespace TinyRenderer
 {
-	StopWatchManager* StopWatchManager::instance = nullptr;
-	
-	StopWatchManager* StopWatchManager::GetInstance()
+	StopWatchManager& StopWatchManager::instance()
 	{
+		static StopWatchManager* instance = nullptr;
 		if(instance == nullptr)
 			instance = new StopWatchManager();
-		return instance;
+		return *instance;
 	}
-	void StopWatchManager::StartUp()
+	void StopWatchManager::startUp()
 	{
-
+		instance();
 	}
 
-	void StopWatchManager::ShutDown()
+	void StopWatchManager::shutDown()
 	{
-		for (auto& stopWatch : stopWatchMap)
+		for (auto& stopWatch : stopWatchMap_)
 		{
 			delete stopWatch.second;
 		}
-		stopWatchMap.clear();
+		stopWatchMap_.clear();
 
-		delete instance;
+		delete &instance();
 	}
 
-	StopWatch* StopWatchManager::CreateStopWatch(const char* name)
+	StopWatch* StopWatchManager::create_stopWatch(const char* name)
 	{
 		const std::string key(name);
 
 		StopWatch* stopWatch = nullptr;
-		if (stopWatchMap.find(key) == stopWatchMap.end())
+		if (stopWatchMap_.find(key) == stopWatchMap_.end())
 		{
 			stopWatch = new StopWatch();
-			stopWatchMap[key] = stopWatch;
+			stopWatchMap_[key] = stopWatch;
 		}
 		else
 		{
-			LOG_WARN(key << " StopWatch is already existed");
+			LOG_WARN(key << " is already existed in StpoWatchMap");
 		}
 		return stopWatch;
 	}
 
-	StopWatch* StopWatchManager::GetStopWatch(const char* name)
+	StopWatch* StopWatchManager::get_stopWatch(const char* name)
 	{
 		const std::string key(name);
 
 		StopWatch* stopWatch = nullptr;
-		if (stopWatchMap.find(key) != stopWatchMap.end())
+		if (stopWatchMap_.find(key) != stopWatchMap_.end())
 		{
-			stopWatch = stopWatchMap[key];
+			stopWatch = stopWatchMap_[key];
 		}
 		return stopWatch;
 	}

@@ -14,7 +14,7 @@ namespace TinyRenderer
 	{
 	public:
 		// 获取引擎根目录目录
-		static const Path& getRootPath()
+		static Path& getRootPath()
 		{
 			static Path* TR_RootPath = nullptr;
 			if (!TR_RootPath)
@@ -23,7 +23,7 @@ namespace TinyRenderer
 		}
 
 		// 获取引擎source目录
-		static const Path& getSourcePath()
+		static Path& getSourcePath()
 		{
 			static Path* TR_SourcePath = nullptr;
 			if (!TR_SourcePath)
@@ -36,7 +36,7 @@ namespace TinyRenderer
 		{
 			static Path* TR_ResourcePath = nullptr;
 			if (!TR_ResourcePath)
-				TR_ResourcePath = new TinyRenderer::Path(getRootPath().m_path / "resource");
+				TR_ResourcePath = new Path(getRootPath().m_path / "resource");
 			return *TR_ResourcePath;
 		}
 
