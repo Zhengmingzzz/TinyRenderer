@@ -3,12 +3,11 @@
 //
 #pragma once
 
-#include "nlohmann/json.hpp"
+#include "Function/CommonType/json.h"
 #include "Core/Stream/IStream.h"
 #include "Core/ThreadPool/TaskResult.h"
 #include <iostream>
 
-using json = nlohmann::json;
 namespace TinyRenderer {
     class ResourceManager
     {

@@ -401,3 +401,5 @@ out
 CMakeSettings.json
 .idea
 cmake-build-debug
+cmake-build-release
+logs

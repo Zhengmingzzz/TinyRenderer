@@ -28,6 +28,7 @@ namespace TinyRenderer
 		StopWatchManager& operator=(const StopWatchManager&) = delete;
 	};
 } // namespace TinyRenderer
+#ifdef _DEBUG
 #define StopWatch_Start(arg_name) \
 		do{ \
 			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
@@ -98,3 +99,11 @@ namespace TinyRenderer
 				LOG_INFO("stopWatch"#arg_name << " cost:" << stopWatch_##arg_name->seconds() << " seconds"); \
 			} \
 		}while(0);
+#else
+#define StopWatch_Start(arg_name)
+#define StopWatch_Pause(arg_name)
+#define StopWatch_Reset(arg_name)
+#define StopWatch_Microseconds(arg_name)
+#define StopWatch_Milliseconds(arg_name)
+#define StopWatch_Seconds(arg_name)
+#endif

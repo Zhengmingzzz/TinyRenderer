@@ -43,8 +43,9 @@ namespace TinyRenderer
 #define LOG_INFO(msg) \
 do{ \
 	std::ostringstream _oss; \
-	_oss << msg <<"\n"<< "File:" << __FILE__ \
-	<< " Line: " << __LINE__<<"\n"; \
+	_oss << "----LOG_INFO----: "  << msg << "\n" \
+	<< "Message occur place :" << __FILE__ \
+	<< ":" << __LINE__ << "\n"; \
 	TinyRenderer::Message::LogInfo(_oss.str()); \
 }while(0);
 #endif // !LOG_INFO
@@ -53,8 +54,9 @@ do{ \
 #define LOG_WARN(msg) \
 do{ \
 	std::ostringstream _oss; \
-	_oss << msg << "\n" << "File:" << __FILE__ \
-	<< " Line: " << __LINE__ << "\n"; \
+	_oss << "----LOG_WARN----: "  << msg << "\n" \
+	<< "Message occur place :" << __FILE__ \
+	<< ":" << __LINE__ << "\n"; \
 	TinyRenderer::Message::LogWarn(_oss.str()); \
 }while(0);
 #endif // !LOG_WARN
@@ -64,8 +66,9 @@ do{ \
 { \
 	do{ \
 		std::ostringstream _oss; \
-		_oss << msg << "\n" << "File:" << __FILE__ \
-		<< " Line: " << __LINE__ << "\n"; \
+		_oss << "----LOG_ERROR----: "  << msg << "\n" \
+		<< "Message occur place :" << __FILE__ \
+		<< ":" << __LINE__ << "\n"; \
 		TinyRenderer::Message::LogError(_oss.str()); \
 	}while(0); \
 	ASSERT(false); \

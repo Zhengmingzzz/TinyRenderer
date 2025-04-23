@@ -11,7 +11,7 @@ public:
 	Delegate() = default;
 
 	// 绑定普通函数 静态成员函数
-	static Delegate Bind(R(*func_ptr)(Args...))
+	static Delegate bind(R(*func_ptr)(Args...))
 	{
 		Delegate d;
 		d.m_func = func_ptr;
@@ -20,17 +20,21 @@ public:
 
 	// 绑定成员函数
 	template<class C>
-	static Delegate Bind(C* obj, R(C::*cfunc_ptr)(Args...))
+	static Delegate bind(std::weak_ptr<C> weak_obj, R(C::*cfunc_ptr)(Args...))
 	{
 		Delegate d;
-		d.m_func = [obj, cfunc_ptr](Args... args)->R {
-			return ((obj->*cfunc_ptr)(std::forward<Args>(args)...));
+		d.m_func = [weak_obj, cfunc_ptr](Args... args)->R {
+			if (auto obj = weak_obj.lock()) {
+				return (obj.get()->*cfunc_ptr)(args...);
+			}
+			LOG_WARN("Object already destroyed");
+			return R();
 		};
 		return d;
 	}
 
 	template<typename F>
-	static Delegate Bind(F&& func)
+	static Delegate bind(F&& func)
 	{
 		Delegate d;
 		d.m_func = [func](Args... args)->R {

@@ -33,18 +33,18 @@ namespace TinyRenderer {
         void shutDown();
         static Page* allocate_newPage(int block_size, int block_num, Allocator* owner_, int alignment = DEFAULT_ALIGNMENT);
 
-        bool try_allocate_block(void*& res);
-        bool try_deallocate_block(Block* block);
+        bool allocate_block(void*& res);
+        bool try_deallocate_block(Block* block); // 直接回收块
         // 判断block地址是否属于这个页
         inline bool is_belongTo(Block* block) {
             ASSERT(block != nullptr);
             //1.判断block是否属于当前page
             std::uintptr_t block_address = reinterpret_cast<uintptr_t>(block);
             std::uintptr_t user_address = reinterpret_cast<uintptr_t>(this->user_address_);
-            if (!(block_address >= user_address && block_address <= user_address + block_size_ * total_block_num_ - 1)) {
-                return false;
+            if (block_address >= user_address && block_address <= user_address + block_size_ * total_block_num_ - 1) {
+                return true;
             }
-            return true;
+            return false;
         }
 
         // 判断是否有剩余块

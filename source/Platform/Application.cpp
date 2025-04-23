@@ -4,24 +4,6 @@
 #include "Function/StopWatch/StopWatchManager.h"
 #include <cstdlib>
 
-// void* operator new(size_t size)
-// {
-// 	return TinyRenderer::MemoryManager::instance().Allocate(size);
-// }
-//
-// void operator delete(void* ptr, size_t) noexcept
-// {
-// 	TinyRenderer::MemoryManager::instance().Deallocate(ptr);
-// }
-// void* operator new[](size_t size)
-// {
-// 	return TinyRenderer::MemoryManager::instance().Allocate(size);
-// }
-// void operator delete[](void* ptr, size_t size) noexcept
-// {
-// 	TinyRenderer::MemoryManager::instance().Deallocate(ptr);
-// }
-
 namespace TinyRenderer
 {
 	Application* Application::instance_ = nullptr;
@@ -45,6 +27,7 @@ namespace TinyRenderer
 
 	bool WindowsApplication::InitialEngine()
 	{
+
 		//MemoryManager::instance().startUp(8, 2048);
 		StopWatchManager::instance().startUp();
 

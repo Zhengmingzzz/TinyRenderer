@@ -3,32 +3,58 @@
 //
 
 #include "Allocator.h"
+
+#include <bits/fs_fwd.h>
+
 #include "Page.h"
 #include "Function/Message/Message.h"
 #include "MemoryManager.h"
 #include "Function/Counter/CounterManager.h"
 
+#include "Core/DebugMemoryManager/DebugAllocator.h"
+
 namespace TinyRenderer {
     void Allocator::startUp(size_t block_size,size_t min_blockNum_perPage, size_t max_blockNum_perPage) {
         ASSERT(block_size>0);
         ASSERT(max_blockNum_perPage>0);
+        if (max_blockNum_perPage < min_blockNum_perPage) {
+            min_blockNum_perPage = max_blockNum_perPage;
+        }
 
         block_size_ = block_size;
         max_blockNum_perPage_ = max_blockNum_perPage;
-        current_blockNum_perPage_ = 2;
+        current_blockNum_perPage_ = min_blockNum_perPage;
         min_blockNum_perPage_ = min_blockNum_perPage;
-        pagehead_ = nullptr;
-        pagetail_ = nullptr;
+        priority_pagehead_ = nullptr;
+        closed_pagelist_ = nullptr;
+
         ewma_longterm_activity_ = 0.f;
         ewma_longterm_activity_factor_ = 0.7f;
 
         ewma_shortterm_activity_ = 0.f;
         ewma_shortterm_activity_factor_ = 0.3f;
+
+        DEBUG_MEM_ALLOCATOR_STARTUP(block_size, min_blockNum_perPage, max_blockNum_perPage);
     }
 
     void Allocator::shutDown() {
-        Page* cur_page = nullptr, *next_page = nullptr;
-        for (cur_page = pagehead_; cur_page != nullptr; ) {
+        Page* cur_page = priority_pagehead_, *next_page = nullptr;
+        // 处理pagelist
+        // 把最后一个节点的next指向nullptr，防止循环遍历
+        if (cur_page != nullptr)
+            cur_page->prev->next = nullptr;
+        while (cur_page != nullptr) {
+            cur_page->shutDown();
+            next_page = cur_page->next;
+            free(cur_page);
+            cur_page = next_page;
+        }
+
+        // 处理closed_pagelist
+        cur_page = closed_pagelist_;
+        if (cur_page != nullptr)
+            cur_page->prev->next = nullptr;
+        while (cur_page != nullptr) {
             cur_page->shutDown();
             next_page = cur_page->next;
             free(cur_page);
@@ -38,91 +64,95 @@ namespace TinyRenderer {
 
     void* Allocator::allocate() {
         //std::lock_guard mutex_lock(allocator_mutex_);
-        StopWatch_Start(mem_total_allocation_time);
         void* res = nullptr;
-        Page* cur_page = pagehead_;
+        Page* cur_page = priority_pagehead_;
 
-        while (res == nullptr) {
-            // 1. 判断是否还有空的块
-            if (cur_page == nullptr) {
-                // 双重检测锁，创建新页
-                StopWatch_Start(mem_alloc_newPage_time);
-                Counter_Add(mem_alloc_newPage_cnt);
-                Page* new_page = Page::allocate_newPage(block_size_, static_cast<int>(current_blockNum_perPage_ + 0.9), this);
-                StopWatch_Pause(mem_alloc_newPage_time);
-                if (pagehead_ == nullptr) {
-                    pagehead_ = new_page;
-                    pagetail_ = new_page;
-                }
-                else {
-                    pagetail_->next = new_page;
-                    pagetail_ = new_page;
-                }
-                cur_page = new_page;
-            }
-
-            // TODO:此处可能会有竞态条件，当删除了其中一个page后，可能会读取到脏数据
-            // 2. 分配含有空余块的页，没有则遍历到下一个页
-            Counter_Add(mem_try_allocate_block_cnt);
-            // TODO:采用小顶堆存放Page减少遍历次数，使用数组存放块数为零的Page。
-            if (cur_page->try_allocate_block(res)) {
-                new_count_ += 1;
-                break;
-            }
-            cur_page = cur_page->next;
+        // 1. 判断是否还有空的块
+        // priority_pagehead_为空说明没有空余块的页了
+        if (cur_page == nullptr) {
+            Page* new_page = Page::allocate_newPage(block_size_, static_cast<int>(current_blockNum_perPage_ + 0.9), this);
+            insert_page(priority_pagehead_, new_page); // 插入新页到优先链表
+            cur_page = new_page;
         }
-        StopWatch_Pause(mem_total_allocation_time);
+
+        // 2. 分配含有空余块的页
+        // cur_page必定会有空余的块
+        if (cur_page->allocate_block(res)) {
+            // 如果当前页块数耗尽，将这个页转移出优先链表，移入closed_pagelist
+            if (cur_page->current_block_num_ == 0) {
+                remove_page(priority_pagehead_ ,cur_page); // 将cur_page移出pagelist，插入closed_pagelist
+                insert_page(closed_pagelist_, cur_page);
+
+            }
+            new_count_ += 1;
+        }
+
         return res;
     }
 
-    bool Allocator::try_dellocate(Page* target_page, Block* target_block, bool& isRecycle_page) {
+    bool Allocator::try_dellocate(Page* const target_page, Block* const target_block, bool& isRecycle_page) {
         ASSERT(target_page!=nullptr);
         ASSERT(target_block!=nullptr);
 
         //std::lock_guard lock(allocator_mutex_);
 
-        bool is_free = true; // 是否对ptr使用free
-        if (target_page->try_deallocate_block(target_block)) {
-            delete_count_ += 1;
-            is_free = false;
+        if (target_page->try_deallocate_block(target_block) == false)
+            return false;
 
-            // 如果页为空了，根据b_isRecycle判断是否要回收页
-                if (target_page->current_block_num_ == target_page->total_block_num_) {
-                    // 此时可以收回页
-                    if (b_isRecycle_) {
-                        // 如果要删除头结点，则更新头结点为当前节点的下一个节点
-                        if (target_page == pagehead_) {
-                            pagehead_ = target_page->next; // 处理头节点的情况
-                            if (target_page == pagetail_) {
-                                pagetail_ = nullptr;    // 处理既是头结点又是尾结点的情况
-                            }
-                        }
-                        // 处理中间节点的情况
-                        else {
-                            Page* prev = pagehead_;
-                            while (prev != nullptr && prev->next != target_page) {
-                                prev = prev->next;
-                            }
-                            ASSERT(prev!=nullptr);
-                            if (prev) { // 找到前驱节点
-                                prev->next = target_page->next;
-                                if (pagetail_ == target_page) { // 更新尾指针
-                                    pagetail_ = prev;
-                                }
-                            }
-                        }
+        delete_count_ += 1;
 
-
-                        // 释放这个页
-                        free(target_page);
-                        // 通知MemoryManager已经完成页的释放
-                        isRecycle_page = true;
+        // 如果页为空了，根据b_isRecycle判断是否要回收页
+        if (target_page->current_block_num_ == target_page->total_block_num_) {
+            // 此时可以收回页
+            if (b_isRecycle_) {
+                // 从priority_pagelist取出该节点
+                Page* prev_page = target_page->prev;
+                Page* next_page = target_page->next;
+                prev_page->next = next_page;
+                next_page->prev = prev_page;
+                // 如果更新的页节点为头结点
+                if (target_page == priority_pagehead_) {
+                    // 如果只有一个节点，则置空；否则更新为next节点
+                    priority_pagehead_ = (next_page == priority_pagehead_) ? nullptr : next_page;
+                }
+                // 释放这个页
+                free(target_page);
+                // 通知MemoryManager已经完成页的释放，删除对应节点
+                isRecycle_page = true;
+                //DEBUG_MEM_DEALLOCATE_NEW_PAGE(block_size_, target_page);
+            }
+        }
+        // 调整pagelist的位置
+        else {
+            // 代表这个页之前块数为0，现在释放了一个块变为1，存储于closed_pagelist中
+            if (target_page->current_block_num_ == 1) {
+                // 从closed_list中拿出来，转到pagelist中
+                remove_page(closed_pagelist_, target_page);
+                insert_page(priority_pagehead_, target_page);
+            }
+            // 反之则说明这个page是在pagelist中，对它进行位置的调整
+            else {
+                Page* prev_page = target_page->prev;
+                Page* next_page = target_page->next;
+                // 当前更改的页数量大于下一个页，向后移
+                if (target_page->current_block_num_ > next_page->current_block_num_) {
+                    swap_adjacent_page(target_page, next_page);
+                    if (target_page == priority_pagehead_) {
+                        priority_pagehead_ = next_page;
                     }
                 }
-
+                // 当前更改的页数量小于上一个页，向前移
+                else if (target_page->current_block_num_ < prev_page->current_block_num_) {
+                    swap_adjacent_page(prev_page, target_page);
+                    if (target_page == priority_pagehead_) {
+                        priority_pagehead_ = prev_page;
+                    }
+                }
+            }
         }
+
         // 返回块是否被收回
-        return !is_free;
+        return true;
     }
 
     void Allocator::tick() {
@@ -171,7 +201,7 @@ namespace TinyRenderer {
 
         float longterm_factor = 0, shortterm_factor = 0;
         // 页的分配大小以长期活跃值为主，短期活跃值用于根据当前情况微调
-        float current_blockNum_perPage = static_cast<float>(current_blockNum_perPage_);
+        float current_blockNum_perPage = current_blockNum_perPage_;
         // 当前长期活跃值大于扩张的边界
         if (ewma_longterm_activity_ > current_blockNum_perPage * expand_threshold_) {
             // 增加每页数量，但是限制其最大上限
@@ -198,5 +228,74 @@ namespace TinyRenderer {
         current_blockNum_perPage_ = std::max(static_cast<float>(min_blockNum_perPage_), current_blockNum_perPage_);
         // 不能超过最大上限
         current_blockNum_perPage_ = std::min(current_blockNum_perPage_, static_cast<float>(max_blockNum_perPage_));
+
+        // DEBUG_MEM_ADJUST_METRIC(block_size_ ,static_cast<int>(occupancy_level), ewma_longterm_activity_, current_blockNum_perPage * expand_threshold_, ewma_shortterm_activity_, current_blockNum_perPage * shrink_threshold_, current_blockNum_perPage);
+    }
+
+    void Allocator::insert_page(Page*& pagehead, Page* const new_page) {
+        // 没有节点的情况
+        if (pagehead == nullptr) {
+            pagehead = new_page;
+            new_page->next = pagehead;
+            new_page->prev = pagehead;
+            return;
+        }
+        // 当前首页的块数大于新页的块数，则插入到头结点
+        if (pagehead->current_block_num_ >= new_page->current_block_num_) {
+            new_page->next = pagehead;
+            new_page->prev = pagehead->prev;
+            pagehead->prev->next = new_page;
+            pagehead->prev = new_page;
+            return;
+        }
+
+        //大于等于1个节点的情况
+        // 将new_page插入到cur_page之后
+        Page* cur_page = pagehead;
+        //找到第一个小于new_page块数的节点
+        while (cur_page->prev != pagehead && cur_page->prev->current_block_num_ > new_page->current_block_num_) {
+            cur_page = cur_page->prev;
+        }
+
+        new_page->next = cur_page->next;
+        new_page->prev = cur_page;
+        cur_page->prev->next = new_page;
+        cur_page->prev = new_page;
+    }
+
+    void Allocator::remove_page(Page*& pagehead, Page* const target_page) {
+        ASSERT(target_page != nullptr);
+
+        // 从priority_pagelist取出该节点
+        Page* prev_page = target_page->prev;
+        Page* next_page = target_page->next;
+
+        prev_page->next = next_page;
+        next_page->prev = prev_page;
+
+        // 如果更新的页节点为头结点
+        if (target_page == pagehead) {
+            // 如果只有一个节点，则置空；否则更新为next节点
+            pagehead = (next_page == pagehead) ? nullptr : next_page;
+        }
+    }
+
+    void Allocator::swap_adjacent_page(Page* const page_front, Page* const page_back) {
+        ASSERT(page_front != nullptr && page_back != nullptr);
+        ASSERT(page_front->next == page_back);
+        ASSERT(page_back->prev == page_front);
+
+        Page* prev_page = page_front->prev;
+        Page* next_page = page_back->next;
+
+        // 先把两个节点相连
+        page_back->next = page_front;
+        page_front->prev = page_back;
+
+        page_back->prev = prev_page;
+        page_front->next = next_page;
+
+        prev_page->next = page_back;
+        next_page->prev = page_front;
     }
 } // TinyRenderer

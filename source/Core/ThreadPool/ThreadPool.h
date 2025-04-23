@@ -11,13 +11,11 @@
 #include <functional>
 #include <future>
 #include <list>
-#include "nlohmann/json.hpp"
+#include "Function/CommonType/json.h"
 #include "TaskResult.h"
 #include "Function/Message/Message.h"
 
 namespace TinyRenderer {
-    using json = nlohmann::json;
-
     enum class TaskPriority : uint8_t {
         High        = 0,    // 最高优先级[5,7](@ref)
         MediumHigh  = 1,    // 中上优先级

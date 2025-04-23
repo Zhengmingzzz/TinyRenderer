@@ -14,30 +14,21 @@ namespace TinyRenderer
 	{
 	public:
 		// 获取引擎根目录目录
-		static Path& getRootPath()
+		static Path get_rootPath()
 		{
-			static Path* TR_RootPath = nullptr;
-			if (!TR_RootPath)
-				TR_RootPath = new Path(std::string(TR_XSTR(TinyRenderer_Root_Path)));
-			return *TR_RootPath;
+			return Path(std::string(TR_XSTR(TinyRenderer_Root_Path)));
 		}
 
 		// 获取引擎source目录
-		static Path& getSourcePath()
-		{
-			static Path* TR_SourcePath = nullptr;
-			if (!TR_SourcePath)
-				TR_SourcePath = new Path(getRootPath().m_path / "source");
-			return *TR_SourcePath;
+		static Path get_sourcePath(){
+			return Path(get_rootPath().m_path / "source");
+
 		}
 
 		// 获取引擎resource目录
-		static const Path& getResourcePath()
+		static Path get_resourcePath()
 		{
-			static Path* TR_ResourcePath = nullptr;
-			if (!TR_ResourcePath)
-				TR_ResourcePath = new Path(getRootPath().m_path / "resource");
-			return *TR_ResourcePath;
+			return Path(get_rootPath().m_path / "resource");
 		}
 
 		// 判断当前路径是否存在

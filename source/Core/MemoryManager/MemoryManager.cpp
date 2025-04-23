@@ -21,13 +21,14 @@ namespace TinyRenderer {
         return *instance;
     }
 
-    void MemoryManager::startUp() {
+
+    void MemoryManager::startUp(int min_blockNum_perPage) {
         MemoryManager& memoryManager = MemoryManager::instance();
         // 从2的0次方一直到2的MAX_TWOPOWERI次方
         size_t block_size = 1;
         for (int i = 0; i <= MAX_TWOPOWERI; i++) {
             allocators_[i] = std::make_unique<Allocator>();
-            allocators_[i]->startUp(block_size, 10, (MAX_TWOPOWERI - i + 1) * 2); // 每个allocator根据分配块的大小，限制它的每页最大块数
+            allocators_[i]->startUp(block_size, MIN_BLOCKNUM_PERPAGE, (MAX_TWOPOWERI - i + 1) * 2); // 每个allocator根据分配块的大小，限制它的每页最大块数
             block_size <<= 1;
         }
 
@@ -45,10 +46,12 @@ namespace TinyRenderer {
             allocators_[i].release();
         }
         delete &memoryManager;
+        DEBUG_MEM_SHUTDOWN();
     }
 
     void* MemoryManager::allocate(size_t size) {
         ASSERT(size>0)
+        StopWatch_Start(alloc_time);
 
         size_t twopoweri = MAX_TWOPOWERI + 1;
         // 找到大于size的第一个allocator
@@ -68,10 +71,12 @@ namespace TinyRenderer {
         else {
             res = allocators_[twopoweri]->allocate();
         }
+        StopWatch_Pause(alloc_time);
         return res;
     }
 
     void MemoryManager::deallocate(void* ptr) {
+        StopWatch_Start(deallocate_time);
         // 1.找到小于ptr的最大值
         auto it = pages_.upper_bound(reinterpret_cast<Page*>(ptr));
         if (it != pages_.begin()) {
@@ -84,11 +89,13 @@ namespace TinyRenderer {
                 if (isRecycle_page) {
                     pages_.erase(it);
                 }
+                StopWatch_Pause(deallocate_time);
                 return;
             }
         }
         // 如果到这没有回收则调用free
         free(ptr);
+        StopWatch_Pause(deallocate_time);
     }
 
     void MemoryManager::tick() {
@@ -150,7 +157,6 @@ namespace TinyRenderer {
     }
 
     void MemoryManager::register_newPage(Page* new_page) {
-        std::lock_guard guard(registerPage_spinlock_);
         pages_.insert(new_page);
     }
 

@@ -7,6 +7,7 @@
 #include "Block.h"
 #include "MemoryManager.h"
 
+#include "Core/DebugMemoryManager/DebugMemoryManager.h"
 namespace TinyRenderer {
     void Page::startUp(int block_size, int block_num, void* user_address, Allocator* owner) {
         ASSERT(block_size > 0);
@@ -28,7 +29,6 @@ namespace TinyRenderer {
     }
 
     void Page::shutDown() {
-        ASSERT(this->current_block_num_ == this->total_block_num_);
     }
 
     void Page::link_freelist(Block *user_address, int block_size, int block_num) {
@@ -65,30 +65,24 @@ namespace TinyRenderer {
 
         if (new_page != nullptr) {
             new_page->startUp(block_size, block_num, aligned_address, owner);
+            //ON_ALLC_NEW_PAGE(new_page, block_size, block_num);
         }
 
         // 向MemoryManager注册新页
         MemoryManager::instance().register_newPage(new_page);
+        DEBUG_MEM_ALLOCATE_NEW_PAGE(block_size, new_page, block_num);
 
         return new_page;
     }
 
-    bool Page::try_allocate_block(void *&res) {
-        StopWatch_Start(mem_try_allocate_time);
+    bool Page::allocate_block(void*& res) {
         // 此处会更改freelist_，上锁
         //std::lock_guard<SpinLock> spin_lock_guard(page_spinlock_);
-        if (!is_block_available()) {
-            Counter_Add(mem_failed_allocate_block);
-            StopWatch_Pause(mem_try_allocate_time);
-            return false;
-        }
+        ASSERT(is_block_available());
 
-        Counter_Add(mem_successful_allocate_block);
-        StopWatch_Start(mem_getblock_time);
         // 创建时自动上锁，销毁时自动解锁
         Block* old_freelist = freelist_;
         Block* new_freelist = Block::get_block(user_address_, old_freelist->next_idx_, block_size_,this->total_block_num_ - 1);
-        StopWatch_Pause(mem_getblock_time);
 
         if (freelist_->next_idx_ == old_freelist->next_idx_) {
             freelist_ = new_freelist;
@@ -96,14 +90,15 @@ namespace TinyRenderer {
             res = old_freelist;
         }
 
-        StopWatch_Pause(mem_try_allocate_time);
         return true;
     }
 
-    // 这里会更改freelist_
     bool Page::try_deallocate_block(Block* block) {
         // 操作freelist_时，上锁
-        std::lock_guard spin_lock_guard(page_spinlock_);
+        // std::lock_guard spin_lock_guard(page_spinlock_);
+        if (!is_belongTo(block)) {
+            return false;
+        }
 
         Block* freelist = freelist_;
         unsigned char freelist_idx = END_MARKER;

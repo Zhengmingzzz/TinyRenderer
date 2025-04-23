@@ -13,6 +13,8 @@ namespace TinyRenderer
 	{
 	public:
 		friend class FileServer;
+		Path() = default;
+
 		// 重载操作符/ 可以用除号表示下一级
 		Path operator/(const char* c_str)
 		{
@@ -24,7 +26,6 @@ namespace TinyRenderer
 			std::filesystem::path combined = m_path / p.m_path;
 			return Path(combined);
 		}
-		Path() {}
 
 		Path(const filesystem::path& p_path)
 		{
@@ -34,7 +35,11 @@ namespace TinyRenderer
 
 		std::string toString()const
 		{
-			return m_path.string();
+			return m_path.generic_string();
+		}
+
+		Path parentPath()const {
+			return m_path.parent_path();
 		}
 	private:
 		filesystem::path m_path;
