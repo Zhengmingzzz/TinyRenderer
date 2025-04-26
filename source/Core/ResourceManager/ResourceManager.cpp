@@ -6,7 +6,7 @@
 namespace TinyRenderer {
     std::mutex ResourceManager::mtx;
 
-    ResourceManager& ResourceManager::Instance() {
+    ResourceManager& ResourceManager::instance() {
         static ResourceManager* instance = nullptr;
         // 使用二重检测保证不会多次上锁影响效率，又保证线程安全
         if (instance == nullptr) {

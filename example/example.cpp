@@ -8,7 +8,7 @@
 #include "Function/CommonType/json.h"
 #include <fstream>
 #include "Function/StopWatch/StopWatchManager.h"
-//#include "Core/ResourceManager/ResourceManager.h"
+#include "Core/ResourceManager/ResourceManager.h"
 #include "Core/MemoryManager/MemoryManager.h"
 #include "Core/ThreadPool/ThreadPool.h"
 #include "Function/Counter/CounterManager.h"
@@ -240,12 +240,21 @@ void mem_time_test() {
 	CounterManager::instance().shutDown();
 }
 
+void asyncIO_test() {
+	auto res = ResourceManager::instance().async_load<json>(FileServer::get_rootPath()/"logs"/"DebugMemoryLog"/"MemoryManager_log.json");
+	while (!res.is_done()) {
+		std::cout << "等待任务完成。。。"<<endl;
+	}
+	auto js = res.get();
+	cout << js.dump(4) << endl;
+
+}
+
 void Example::Main() {
 	MemoryManager::instance().startUp();
-	//ThreadPool::instance().startUp();
+	ThreadPool::instance().startUp();
 
-	mem_time_test();
 
-	//ThreadPool::instance().shutDown();
+	ThreadPool::instance().shutDown();
 	MemoryManager::instance().shutDown();
 }

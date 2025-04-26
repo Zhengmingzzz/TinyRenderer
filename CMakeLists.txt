@@ -12,7 +12,7 @@ include_directories("example")
 
 add_compile_definitions("TinyRenderer_Root_Path=${CMAKE_SOURCE_DIR}")
 
-file(GLOB_RECURSE engine_cpp source/*.cpp source/*.h)
+file(GLOB_RECURSE engine_cpp source/*.cpp source/*.h source/*.hpp)
 file(GLOB_RECURSE example_cpp example/*.cpp example/*.h)
 
 

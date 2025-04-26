@@ -5,7 +5,7 @@
 #include "DebugMemoryManager.h"
 #include <cmath>
 #include "Core/MemoryManager/MemoryManager.h"
-#include "Core/Stream/JsonStream.h"
+#include "Core/StreamSystem/StreamSystem.hpp"
 #include "Platform/FileServer/FileServer.h"
 
 namespace TinyRenderer {
@@ -45,8 +45,8 @@ namespace TinyRenderer {
 
         ordered_json mem_log_info = log_mem_info();
         JsonStream json_stream;
-        Path log_page = FileServer::get_rootPath() / "logs" / "DebugMemoryLog" / "test_mem_log.json";
-        json_stream.Save(std::move(log_page), mem_log_info);
+        Path log_page = FileServer::get_rootPath() / "logs" / "DebugMemoryLog" / "MemoryManager_log.json";
+        json_stream.save(std::move(log_page), mem_log_info);
     }
 
     void DebugMemoryManager::on_alloc_block(int block_size,void* block, std::string&& file, size_t line) {

@@ -1,21 +1,56 @@
 //
-// Created by Administrator on 25-3-28.
+// Created by Administrator on 25-4-26.
 //
 #pragma once
-
-#include "IStream.h"
-#include "Function/CommonType/json.h"
-#include "StreamType.h"
+#include <cxxabi.h>
 #include <fstream>
 
-#include "Core/ResourceManager/ResourceManager.h"
-#include "Core/ThreadPool/ThreadPool.h"
+#include "Function/Message/Message.h"
 #include "Platform/Path.h"
+#include "Core/ThreadPool/ThreadPool.h"
+
+namespace TinyRenderer{
+    template<class T>
+    class IStream {
+    public:
+        // 文件同步读写API
+        virtual T load(Path&& path) = 0;
+        virtual bool save(Path&& path, T resource) = 0;
+
+        // 文件异步读写API
+        virtual TaskResult<T> async_load(Path&& path) = 0;
+        virtual TaskResult<bool> async_save(Path&& path, T resource) = 0;
+
+        virtual ~IStream() = default;
+    };
+}
+// 通过模版特化定义返回值为RetType的类名为ClassName类型的Stream类型对象实例
+#define MACRO_STREAM_TYPE(RetType, ClassName) \
+    template<> \
+    struct StreamType<RetType>{ \
+    static IStream<RetType>* instance() { \
+        static ClassName instance; \
+        return &instance; \
+    } \
+};
+
+namespace TinyRenderer {
+    template<class T>
+        struct StreamType {
+        static IStream<T>* instance() {
+            int status;
+            char* demangled = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status);
+            LOG_ERROR("Type " << (demangled ? demangled : "unknown") << " is not registered in any stream");
+            free(demangled);
+            return nullptr;
+        }
+    };
+}
 
 namespace TinyRenderer {
     class JsonStream : public IStream<json> {
     public:
-        json Load(Path&& path) override {
+        json load(Path&& path) override {
             std::ifstream ifstr(path.toString());
             json j{};
             if (!ifstr.is_open()){
@@ -33,7 +68,24 @@ namespace TinyRenderer {
             }
             return j;
         }
-        bool Save(Path&& path, json resource) override{
+        bool save(Path&& path, json resource) override{
+            std::filesystem::create_directory(path.parentPath().toString());
+
+            // 使用ofstream输出流
+            std::ofstream ofstr(path.toString());
+            if (!ofstr.is_open())
+            {
+                std::cerr << "无法打开文件：" << path.toString() << std::endl;
+                return false;
+            }
+
+            // 直接写入buffer数据
+            ofstr << resource.dump(4);
+            ofstr.close();
+
+            return true;
+        }
+        bool save(Path&& path, ordered_json resource) {
             std::filesystem::create_directory(path.parentPath().toString());
 
             // 使用ofstream输出流
@@ -51,43 +103,24 @@ namespace TinyRenderer {
             return true;
         }
 
-        bool Save(Path&& path, ordered_json resource) {
-            std::filesystem::create_directory(path.parentPath().toString());
-
-            // 使用ofstream输出流
-            std::ofstream ofstr(path.toString());
-            if (!ofstr.is_open())
-            {
-                std::cerr << "无法打开文件：" << path.toString() << std::endl;
-                return false;
-            }
-
-            // 直接写入buffer数据
-            ofstr << resource.dump(4);
-            ofstr.close();
-
-            return true;
-        }
-
-        TaskResult<json> Asyn_Load(Path&& path) override{
+        TaskResult<json> async_load(Path&& path) override{
             return ThreadPool::instance().enqueue(
             [this, moved_path = std::move(path)]() mutable ->json {
-                json res = Load(std::move(moved_path));
-                ResourceManager::Instance().AsynIO_CallBack();
+                json res = load(std::move(moved_path));
                 return res;
             },TaskPriority::Medium
         );
         }
 
-        TaskResult<bool> Asyn_Save(Path&& path, json resource) override{
+        TaskResult<bool> async_save(Path&& path, json resource) override{
             return ThreadPool::instance().enqueue(
                 [this, moved_path = std::move(path), resource]() mutable ->bool {
-                    bool res = this->Save(std::move(moved_path), resource);
-                    ResourceManager::Instance().AsynIO_CallBack();
+                    bool res = this->save(std::move(moved_path), resource);
                     return res;
                 }, TaskPriority::MediumHigh);
         }
     };
 
-    MACRO_STREAM_TYPE(json, JsonStream)
+    MACRO_STREAM_TYPE(json, JsonStream);
+
 }
