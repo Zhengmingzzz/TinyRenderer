@@ -1,16 +1,14 @@
-#pragma once
+ï»¿#pragma once
 #include <string>
 #include <cassert>
 #include <iostream>
-
-#include "Platform/Application.h"
-
 #include <sstream>
+
 
 namespace TinyRenderer
 {
 	/// <summary>
-	/// ¸ºÔğ³ÌĞò·¢ËÍĞÅÏ¢
+	/// è´Ÿè´£ç¨‹åºå‘é€ä¿¡æ¯
 	/// </summary>
 	class Message
 	{
@@ -25,15 +23,13 @@ namespace TinyRenderer
 		}
 		static inline void LogError(const std::string& msg)
 		{
-			std::cout << msg << std::endl;
-
-			//spdlog::error(msg);
+			std::cerr << msg << std::endl;
 		}
 
 	};
 }
 
-#ifdef _DEBUG // Èç¹ûÎªdebugÄ£Ê½£¬Ôò¿ªÆôassert
+#ifdef _DEBUG // å¦‚æœä¸ºdebugæ¨¡å¼ï¼Œåˆ™å¼€å¯assert
 #define ASSERT(expr) \
         if (!(expr)) { \
             assert(expr); \
@@ -75,7 +71,7 @@ do{ \
 }
 #endif // !LOG_ERROR
 
-#else // ·ñÔòÊ²Ã´¶¼²»×ö
+#else // å¦åˆ™ä»€ä¹ˆéƒ½ä¸åš
 #define ASSERT(expr)
 #define LOG_INFO(msg)
 #define LOG_WARN(msg)

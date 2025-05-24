@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Created by Administrator on 25-4-16.
 //
 
@@ -24,7 +24,7 @@ namespace TinyRenderer {
         this->prev = nullptr;
         owner_ = owner;
 
-        // Á¬½ÓÃ¿¸ö¿ÕÏĞ¿é
+        // è¿æ¥æ¯ä¸ªç©ºé—²å—
         Page::link_freelist(user_address_, block_size, block_num);
     }
 
@@ -45,7 +45,7 @@ namespace TinyRenderer {
 
 
     Page *Page::allocate_newPage(int block_size, int block_num, Allocator* owner, int alignment) {
-        // ±ØĞëÎª2µÄÃİ
+        // å¿…é¡»ä¸º2çš„å¹‚
         ASSERT((alignment & (alignment - 1)) == 0);
         Page* new_page = nullptr;
 
@@ -53,14 +53,14 @@ namespace TinyRenderer {
         void* malloc_ptr = malloc(extension_size);
         ASSERT(malloc_ptr != nullptr);
 
-        // Í¨¹ıÎ»ÔËËã¼ÆËã³ö¶ÔÆëµÄÓÃ»§¿Õ¼äÊ×µØÖ·
+        // é€šè¿‡ä½è¿ç®—è®¡ç®—å‡ºå¯¹é½çš„ç”¨æˆ·ç©ºé—´é¦–åœ°å€
         uintptr_t raw_address = reinterpret_cast<uintptr_t>(malloc_ptr) + sizeof(Page);
         unsigned int mask = alignment - 1;
         unsigned int misalignment = (raw_address & mask);
         unsigned int offset = alignment - misalignment;
         void* aligned_address = reinterpret_cast<void*>(raw_address + offset);
 
-        // ³õÊ¼»¯new_page²ÎÊı
+        // åˆå§‹åŒ–new_pageå‚æ•°
         new_page = new (malloc_ptr) Page;
 
         if (new_page != nullptr) {
@@ -68,19 +68,19 @@ namespace TinyRenderer {
             //ON_ALLC_NEW_PAGE(new_page, block_size, block_num);
         }
 
-        // ÏòMemoryManager×¢²áĞÂÒ³
+        // å‘MemoryManageræ³¨å†Œæ–°é¡µ
         MemoryManager::instance().register_newPage(new_page);
-        DEBUG_MEM_ALLOCATE_NEW_PAGE(block_size, new_page, block_num);
+        // DEBUG_MEM_ALLOCATE_NEW_PAGE(block_size, new_page, block_num);
 
         return new_page;
     }
 
     bool Page::allocate_block(void*& res) {
-        // ´Ë´¦»á¸ü¸Äfreelist_£¬ÉÏËø
+        // æ­¤å¤„ä¼šæ›´æ”¹freelist_ï¼Œä¸Šé”
         //std::lock_guard<SpinLock> spin_lock_guard(page_spinlock_);
         ASSERT(is_block_available());
 
-        // ´´½¨Ê±×Ô¶¯ÉÏËø£¬Ïú»ÙÊ±×Ô¶¯½âËø
+        // åˆ›å»ºæ—¶è‡ªåŠ¨ä¸Šé”ï¼Œé”€æ¯æ—¶è‡ªåŠ¨è§£é”
         Block* old_freelist = freelist_;
         Block* new_freelist = Block::get_block(user_address_, old_freelist->next_idx_, block_size_,this->total_block_num_ - 1);
 
@@ -94,7 +94,7 @@ namespace TinyRenderer {
     }
 
     bool Page::try_deallocate_block(Block* block) {
-        // ²Ù×÷freelist_Ê±£¬ÉÏËø
+        // æ“ä½œfreelist_æ—¶ï¼Œä¸Šé”
         // std::lock_guard spin_lock_guard(page_spinlock_);
         if (!is_belongTo(block)) {
             return false;
@@ -102,10 +102,10 @@ namespace TinyRenderer {
 
         Block* freelist = freelist_;
         unsigned char freelist_idx = END_MARKER;
-        // Èç¹ûµ±Ê±freelist²»Îª¿Õ,Ôò¸üĞÂfreelist_idx
+        // å¦‚æœå½“æ—¶freelistä¸ä¸ºç©º,åˆ™æ›´æ–°freelist_idx
         if (freelist != nullptr)
             freelist_idx = freelist->get_index(this->user_address_, this->block_size_);
-        // Ê¹ÓÃÍ·²å·¨²åÈëĞÂµÄ½Úµã
+        // ä½¿ç”¨å¤´æ’æ³•æ’å…¥æ–°çš„èŠ‚ç‚¹
         block->next_idx_ = freelist_idx;
         freelist_ = block;
         current_block_num_ += 1;

@@ -3,6 +3,7 @@
 //
 #include "CounterManager.h"
 
+
 #include "Function/Message/Message.h"
 
 namespace TinyRenderer {
