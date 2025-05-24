@@ -6,64 +6,62 @@
 namespace TinyRenderer {
     size_t ThreadPool::max_thread_count;
     size_t ThreadPool::min_thread_count;
-    std::mutex ThreadPool::instance_mutex;
 
     ThreadPool& ThreadPool::instance() {
         static ThreadPool* pool = nullptr;
-        // Ë«ÖØËø¶¨
-        if (pool == nullptr) {
-            // Ö»ÔÊĞíÒ»¸öÏß³Ì½øÈë ´´½¨ÊµÀı
-            std::lock_guard lock(instance_mutex);
-            if (pool == nullptr) {
-                pool = new ThreadPool();
-            }
-        }
+
+        std::call_once(
+                instance_flag_,
+                [](){
+                    pool = new ThreadPool();
+                }
+                );
 
         return *pool;
     }
 
     void ThreadPool::launch_worker_thread() {
-        // Ê¹ÓÃÖÇÄÜÖ¸Õë¹ÜÀíĞÂÏß³Ì¿éµÄÉúÃüÖÜÆÚ
+        // ä½¿ç”¨æ™ºèƒ½æŒ‡é’ˆç®¡ç†æ–°çº¿ç¨‹å—çš„ç”Ÿå‘½å‘¨æœŸ
         std::shared_ptr<ThreadBlock> thread_block = std::make_shared<ThreadBlock>();
 
         auto lambda = [this, weak_block = std::weak_ptr(thread_block)]() {
-            // ¹¤×÷Ïß³ÌÖ´ĞĞÁ÷³Ì
+            // å·¥ä½œçº¿ç¨‹æ‰§è¡Œæµç¨‹
             while (true) {
-                // ´´½¨Ò»¸ö¿ÕÈÎÎñ£¬µÈ´ıÊÊµ±Ìõ¼şºó»ñÈ¡ÈÎÎñ²¢Ö´ĞĞ
+                // åˆ›å»ºä¸€ä¸ªç©ºä»»åŠ¡ï¼Œç­‰å¾…é€‚å½“æ¡ä»¶åè·å–ä»»åŠ¡å¹¶æ‰§è¡Œ
                 Task task;
                 {
                     std::unique_lock<std::mutex> lock(queue_mutex);
 
-                    // Èç¹û blockÒÑ¾­±»É¾³ı||Í£Ö¹Ïß³Ì||ÈÎÎñ¶ÓÁĞ²»Îª¿Õ £¬Ôò¼ÌĞøÖ´ĞĞ
+                    // å¦‚æœ blockå·²ç»è¢«åˆ é™¤||åœæ­¢çº¿ç¨‹||ä»»åŠ¡é˜Ÿåˆ—ä¸ä¸ºç©º ï¼Œåˆ™ç»§ç»­æ‰§è¡Œ
                     auto predicate = [this, weak_block] {
-                        // ÏÈÅĞ¶Ïµ±Ç°ÈõÖ¸ÕëÊÇ·ñÓĞĞ§
+                        // å…ˆåˆ¤æ–­å½“å‰å¼±æŒ‡é’ˆæ˜¯å¦æœ‰æ•ˆ
                         if (auto block = weak_block.lock()) {
                             return threadpool_stop.load(std::memory_order_seq_cst) ||
                                block->stop.load(std::memory_order_acquire) ||
                                !tasks.empty();
                         }
                         LOG_ERROR("the thread_block is delete before thread return");
-                        // Èç¹ûÎŞĞ§ÔòÖ±½ÓÍË³öÌõ¼ş±äÁ¿
+                        // å¦‚æœæ— æ•ˆåˆ™ç›´æ¥é€€å‡ºæ¡ä»¶å˜é‡
                         return true;
                     };
                     condition.wait(lock, predicate);
 
-                    // ÎŞÈÎÎñÇÒÒªÇóÍ£Ö¹£¬ÔòÍ£Ö¹Ïß³Ì
+                    // æ— ä»»åŠ¡ä¸”è¦æ±‚åœæ­¢ï¼Œåˆ™åœæ­¢çº¿ç¨‹
                     if (threadpool_stop.load(std::memory_order_seq_cst) && tasks.empty()) {
                         return;
                     }
-                    // Èç¹ûµ±Ç°¶ÔÏóÒÑ¾­±»É¾³ı||ÒªÇó¹Ø±Õµ±Ç°Ïß³Ì£¬ÔòÍ£Ö¹
+                    // å¦‚æœå½“å‰å¯¹è±¡å·²ç»è¢«åˆ é™¤||è¦æ±‚å…³é—­å½“å‰çº¿ç¨‹ï¼Œåˆ™åœæ­¢
                     if (auto block = weak_block.lock(); !block || block->stop.load(std::memory_order_acquire))
                         return;
 
-                    // ´Ó¶ÓÁĞÄÃ³öÈÎÎñ
+                    // ä»é˜Ÿåˆ—æ‹¿å‡ºä»»åŠ¡
                     task.func = std::move(tasks.top().func);
                     tasks.pop();
                 }
-                // »ñÈ¡×ÊÔ´ËùÓĞÈ¨£¬±ÜÃâÍ»È»±»É¾³ı×ÊÔ´
+                // è·å–èµ„æºæ‰€æœ‰æƒï¼Œé¿å…çªç„¶è¢«åˆ é™¤èµ„æº
                 if (auto temp_ptr = weak_block.lock()) {
                     weak_block.lock()->isWorking.store(true, std::memory_order_release);
-                    // Ö´ĞĞÈÎÎñ
+                    // æ‰§è¡Œä»»åŠ¡
                     try {
                         task.func();
                     }
@@ -83,25 +81,25 @@ namespace TinyRenderer {
                 lambda();
             })));
         {
-            std::lock_guard lock(instance_mutex);
+            std::lock_guard lock(thread_mutex_);
             workers.push_back(std::move(thread_block));
         }
     }
 
     void ThreadPool::close_idle_worker() {
-        // ±éÀúËùÓĞÏß³Ì
+        // éå†æ‰€æœ‰çº¿ç¨‹
         for (auto it = workers.begin(); it != workers.end(); ++it) {
             std::shared_ptr<ThreadBlock> block = *it;
-            // ²é¿´ÊÇ·ñÓĞ¿ÕÏĞµÄ
+            // æŸ¥çœ‹æ˜¯å¦æœ‰ç©ºé—²çš„
             if (block->isWorking.load(std::memory_order_acquire) == false) {
-                // ÉèÖÃ¿ÕÏĞÏŞÖÆÍ£Ö¹Ö´ĞĞ±êÊ¶
+                // è®¾ç½®ç©ºé—²é™åˆ¶åœæ­¢æ‰§è¡Œæ ‡è¯†
                 block->stop.store(true, std::memory_order_release);
                 condition.notify_all();
 
-                // µ÷ÓÃTextureBlock¹Ø±Õº¯Êı
+                // è°ƒç”¨TextureBlockå…³é—­å‡½æ•°
                 block->shutDown();
                 {
-                    std::lock_guard lock(instance_mutex);
+                    std::lock_guard lock(thread_mutex_);
                     workers.erase(it);
                 }
                 break;
@@ -127,7 +125,7 @@ namespace TinyRenderer {
         condition.notify_all();
 
         for (auto& worker : workers) {
-            // µÈ´ıËùÓĞÏß³ÌÖ´ĞĞÍê
+            // ç­‰å¾…æ‰€æœ‰çº¿ç¨‹æ‰§è¡Œå®Œ
             worker->shutDown();
         }
         workers.clear();
@@ -139,17 +137,17 @@ namespace TinyRenderer {
         size_t task_count=0;
         size_t worker_count=0;
         {
-            // µ÷ÕûÏß³ÌÊıÁ¿Ê±ÉÏËø£¬·ÀÖ¹¶ÁÈ¡ÔàÊı¾İ
+            // è°ƒæ•´çº¿ç¨‹æ•°é‡æ—¶ä¸Šé”ï¼Œé˜²æ­¢è¯»å–è„æ•°æ®
             std::lock_guard<std::mutex> lock(queue_mutex);
-            task_count = tasks.size(); // ĞèÒª¼ÓËø»ñÈ¡
-            // Ïß³ÌÊı = Ö÷Ïß³Ì + ÆäËûÏß³ÌÊı
+            task_count = tasks.size(); // éœ€è¦åŠ é”è·å–
+            // çº¿ç¨‹æ•° = ä¸»çº¿ç¨‹ + å…¶ä»–çº¿ç¨‹æ•°
             worker_count = workers.size() + 1;
         }
 
-        // Èç¹ûĞèÒªµÄÈÎÎñÊıÁ¿´óÓÚ¹¤×÷Ïß³ÌÊı
+        // å¦‚æœéœ€è¦çš„ä»»åŠ¡æ•°é‡å¤§äºå·¥ä½œçº¿ç¨‹æ•°
         if (task_count > worker_count * 2 && worker_count < max_thread_count)
             launch_worker_thread();
-        // Èç¹û¹¤×÷Ïß³ÌÊıÁ¿´óÓÚÈÎÎñÊıÁ¿ ²¢ÇÒ ¹¤×÷Ïß³ÌÊıÁ¿´óÓÚ×îĞ¡µÄÏß³ÌÊıÁ¿
+        // å¦‚æœå·¥ä½œçº¿ç¨‹æ•°é‡å¤§äºä»»åŠ¡æ•°é‡ å¹¶ä¸” å·¥ä½œçº¿ç¨‹æ•°é‡å¤§äºæœ€å°çš„çº¿ç¨‹æ•°é‡
         else if (worker_count > task_count && worker_count > min_thread_count)
             close_idle_worker();
     }

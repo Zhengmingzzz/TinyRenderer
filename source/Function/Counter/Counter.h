@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Created by Administrator on 25-4-20.
 //
 #pragma once
@@ -6,7 +6,7 @@
 #include <string>
 
 namespace TinyRenderer {
-    // ¼ÆÊýÆ÷Àà£¬¸ºÔð¼ÆÊý
+    // è®¡æ•°å™¨ç±»ï¼Œè´Ÿè´£è®¡æ•°
     class Counter {
       public:
         Counter():counter_(0){}

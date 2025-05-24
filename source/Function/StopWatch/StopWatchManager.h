@@ -68,7 +68,7 @@ namespace TinyRenderer
 			} \
 		}while(0);
 
-		// Î¢Ãë
+		// å¾®ç§’
 #define StopWatch_Microseconds(arg_name) \
 		do{ \
 			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \
@@ -81,7 +81,7 @@ namespace TinyRenderer
 			} \
 		}while(0);
 
-		// ºÁÃë
+		// æ¯«ç§’
 #define StopWatch_Milliseconds(arg_name) \
 		do{ \
 			StopWatch* stopWatch_##arg_name = StopWatchManager::instance().get_stopWatch(#arg_name); \

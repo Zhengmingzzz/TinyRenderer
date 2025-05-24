@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Created by Administrator on 25-4-15.
 //
 #pragma once
@@ -14,8 +14,8 @@
 #include <source_location>
 
 namespace TinyRenderer {
-    // ÄÚ´æÕ¼ÓÃÂÊµÄµÈ¼¶»®·Ö
-    // [0,20]ÎªµÍ¼¶£¬[20,70]ÎªÖĞ¼¶£¬[70,100]Îª¸ß¼¶
+    // å†…å­˜å ç”¨ç‡çš„ç­‰çº§åˆ’åˆ†
+    // [0,20]ä¸ºä½çº§ï¼Œ[20,70]ä¸ºä¸­çº§ï¼Œ[70,100]ä¸ºé«˜çº§
     enum class Occupancy_level {
         low = 0,
         low_medium,
@@ -27,19 +27,19 @@ namespace TinyRenderer {
     class MemoryManager {
         friend class DebugMemoryManager;
     public:
-        static inline constexpr int MAX_TWOPOWERI = 10;  // ×î´ó¿ÉÒÔÉêÇë2µÄ¶àÉÙ´Î·½´óĞ¡£¬¹²ÓĞ[0, MAX_TWOPOWERI]´óĞ¡µÄÄÚ´æ¿é
-        static inline constexpr int MIN_BLOCKNUM_PERPAGE = 1; // Ã¿Ò³×îĞ¡¿ÉÒÔÓĞ¶àÉÙ¸ö¿é
-        static inline int refresh_interval_ = 15; // Ã¿¹ı¶àÉÙÖ¡¸üĞÂÒ»´ÎÖ¸±ê
+        static inline constexpr int MAX_TWOPOWERI = 20;  // æœ€å¤§å¯ä»¥ç”³è¯·2çš„å¤šå°‘æ¬¡æ–¹å¤§å°ï¼Œå…±æœ‰[0, MAX_TWOPOWERI]å¤§å°çš„å†…å­˜å—
+        static inline constexpr int MIN_BLOCKNUM_PERPAGE = 1; // æ¯é¡µæœ€å°å¯ä»¥æœ‰å¤šå°‘ä¸ªå—
+        // static inline int refresh_interval_ = 15; // æ¯è¿‡å¤šå°‘å¸§æ›´æ–°ä¸€æ¬¡æŒ‡æ ‡
 
-        Occupancy_level occupancy_level_; // Ô­×ÓµÄÕ¼ÓÃÂÊµÈ¼¶£¬ÓÃÓÚ¿ØÖÆAllocatorµÄÒ³·ÖÅä²ßÂÔ
+        Occupancy_level occupancy_level_; // åŸå­çš„å ç”¨ç‡ç­‰çº§ï¼Œç”¨äºæ§åˆ¶Allocatorçš„é¡µåˆ†é…ç­–ç•¥
     public:
-        void startUp(int min_blockNum_perPage = 1);
+        void startUp();
         void shutDown();
         void* allocate(size_t size);
         void deallocate(void* ptr);
-        void tick();  // Ã¿Ö¡tickÒ»´Î£¬ÅĞ¶ÏÊÇ·ñ¸üĞÂÖ¸±ê
-        void refreshMetrics(); // Ë¢ĞÂÖ¸±ê
-        void register_newPage(Page* new_page); // ×¢²áĞÂÒ³
+        // void tick();  // æ¯å¸§tickä¸€æ¬¡ï¼Œåˆ¤æ–­æ˜¯å¦æ›´æ–°æŒ‡æ ‡
+        // void refreshMetrics(); // åˆ·æ–°æŒ‡æ ‡
+        void register_newPage(Page* new_page); // æ³¨å†Œæ–°é¡µ
     public:
         static MemoryManager& instance();
         MemoryManager(const MemoryManager&) = delete;
@@ -47,13 +47,13 @@ namespace TinyRenderer {
 
 
     private:
-        struct Ewma {
-            float smoothing_factor_;
-            float average_occupancy_;
-        };
+        // struct Ewma {
+        //     float smoothing_factor_;
+        //     float average_occupancy_;
+        // };
         MemoryManager() = default;
         std::array<std::unique_ptr<Allocator>, MAX_TWOPOWERI+1> allocators_;
-        Ewma ewma_occupancy_; // ÒÆ¶¯Æ½¾ùÄÚ´æÕ¼ÓÃÂÊ,Í¨¹ıËüµ÷ÕûÕ¼ÓÃÂÊµÈ¼¶
+        // Ewma ewma_occupancy_; // ç§»åŠ¨å¹³å‡å†…å­˜å ç”¨ç‡,é€šè¿‡å®ƒè°ƒæ•´å ç”¨ç‡ç­‰çº§
 
 
         struct PageCompare {
@@ -61,10 +61,10 @@ namespace TinyRenderer {
                 return a < b;
             }
         };
-        std::set<Page*, PageCompare> pages_; // ´ÓĞ¡µ½´óÎªpageµÄµØÖ·ÅÅ¶Ó
+        std::set<Page*, PageCompare> pages_; // ä»å°åˆ°å¤§ä¸ºpageçš„åœ°å€æ’é˜Ÿ
 
         static inline std::once_flag instance_flag_;
-        static inline std::once_flag startUp_flag_;
+        static inline std::once_flag startUp_flag_; // TODO:ä¿®æ”¹startUp_flag_å’ŒshutDown_flag_
         static inline std::once_flag shutDown_flag_;
     };
 
@@ -75,11 +75,11 @@ namespace TinyRenderer {
 #endif
 
 #ifdef _DEBUG
-    // DEBUGÄ£Ê½ÏÂ´ø²ÎÊıµÄÄÚ´æ·ÖÅä
+    // DEBUGæ¨¡å¼ä¸‹å¸¦å‚æ•°çš„å†…å­˜åˆ†é…
     template<typename T, typename... Args>
     T* newElement_imp(const char* file, int line, Args&&... args) {
         T* ptr = nullptr;
-        // Èç¹ûptr²»Îª¿ÕÔòµ÷ÓÃoperator new³õÊ¼»¯
+        // å¦‚æœpträ¸ä¸ºç©ºåˆ™è°ƒç”¨operator newåˆå§‹åŒ–
         if ((ptr = reinterpret_cast<T*>(MemoryManager::instance().allocate(sizeof(T)))) != nullptr) {
             new(ptr) T(std::forward<Args>(args)...);
         }
@@ -92,19 +92,22 @@ namespace TinyRenderer {
         }
         return ptr;
     }
-#endif
-    // RELEASEÄ£Ê½ÏÂ²»´ø²ÎÊıµÄÄÚ´æ·ÖÅä`
-    // ÉêÇëÄÚ´æµÄÄÚ´æ³ØµÄ½Ó¿Ú
+#else
+#ifdef _RELEASE
+    // RELEASEæ¨¡å¼ä¸‹ä¸å¸¦å‚æ•°çš„å†…å­˜åˆ†é…`
+    // ç”³è¯·å†…å­˜çš„å†…å­˜æ± çš„æ¥å£
     template<typename T, typename... Args>
     T* newElement_imp(Args... args) {
         T* ptr = nullptr;
-        // Èç¹ûptr²»Îª¿ÕÔòµ÷ÓÃoperator new³õÊ¼»¯
+        // å¦‚æœpträ¸ä¸ºç©ºåˆ™è°ƒç”¨operator newåˆå§‹åŒ–
         if ((ptr = reinterpret_cast<T*>(MemoryManager::instance().allocate(sizeof(T)))) != nullptr) {
             new(ptr) T(std::forward<Args>(args)...);
         }
         return ptr;
     }
-    // ÊÍ·ÅÄÚ´æµÄÄÚ´æ³ØµÄ½Ó¿Ú
+#endif
+#endif
+    // é‡Šæ”¾å†…å­˜çš„å†…å­˜æ± çš„æ¥å£
     template<typename T>
     void deleteElement(T* ptr) {
         if (ptr != nullptr) {

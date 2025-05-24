@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Created by Administrator on 25-4-16.
 //
 #pragma once
@@ -9,9 +9,9 @@ namespace TinyRenderer {
 
     class Block {
     public:
-        unsigned char next_idx_; // Ê¹ÓÃÔ­×Ó±äÁ¿±£Ö¤Ô­×ÓÐÔ£¬·ÀÖ¹¶à¸öÏß³ÌÍ¬Ê±ÐÞ¸Ä
+        unsigned char next_idx_; // ä½¿ç”¨åŽŸå­å˜é‡ä¿è¯åŽŸå­æ€§ï¼Œé˜²æ­¢å¤šä¸ªçº¿ç¨‹åŒæ—¶ä¿®æ”¹
 
-        // ¼ÆËãµ±Ç°¿éµÄË÷ÒýÖµ
+        // è®¡ç®—å½“å‰å—çš„ç´¢å¼•å€¼
         unsigned int get_index(void* user_memory, unsigned int block_size) {
             ASSERT(user_memory != nullptr);
             ASSERT(block_size > 0);
@@ -24,7 +24,7 @@ namespace TinyRenderer {
                 res = (cur_addr - head_addr) / block_size;
             return res;
         }
-        // ¸ù¾ÝÐÅÏ¢·µ»Øindex¿éµÄÊ×µØÖ·
+        // æ ¹æ®ä¿¡æ¯è¿”å›žindexå—çš„é¦–åœ°å€
         static Block* get_block(void* user_memory, unsigned int index, unsigned int block_size, unsigned int max_index) {
             ASSERT(user_memory != nullptr);
             ASSERT(block_size > 0);

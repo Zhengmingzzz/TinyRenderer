@@ -1,0 +1,37 @@
+﻿//
+// Created by Administrator on 25-5-24.
+//
+#pragma once
+#include "Function/Framework/Object/Object.h"
+
+
+namespace TinyRenderer {
+    class GameObject;
+
+    class Component: public Object {
+        friend class GameObject;
+    public:
+        void set_owner_object(GameObject *parent);
+        GameObject* get_owner_object() const;
+
+    private:
+        GameObject* owner_object_;
+
+
+    public:
+        virtual void awake(){};
+        virtual void on_enable(){};
+        virtual void on_disable(){};
+        virtual void start(){};
+        virtual void update(){};
+        virtual void fixed_update(){};
+        virtual void pre_render(){};
+        virtual void render(){};
+        virtual void post_render(){};
+
+    private:
+
+        RTTR_ENABLE(Object)
+    };
+} // TinyRenderer
+

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <chrono>
 #include "Function/Message/Message.h"
 namespace TinyRenderer
@@ -28,7 +28,7 @@ namespace TinyRenderer
 			state_ = State::PAUSED;
 		}
 
-		// ÔİÍ£ºó¼ÌĞø
+		// æš‚åœåç»§ç»­
 		void Restart()
 		{
 			if (state_ == State::RUNNING)
@@ -45,44 +45,44 @@ namespace TinyRenderer
 			begin_time_ = std::chrono::system_clock::time_point();
 			accumulated_time_ = std::chrono::system_clock::duration();
 		}
-		//ÄÉÃë
+		//çº³ç§’
 		std::int64_t nanoseconds()
 		{
 			if (state_ == State::RUNNING)
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªÄÉÃë
+			//è½¬çº³ç§’
 			return std::chrono::duration_cast<std::chrono::nanoseconds>(accumulated_time_).count();
 		}
-		//Î¢Ãë
+		//å¾®ç§’
 		std::int64_t microseconds()
 		{
 			if (state_ == State::RUNNING)
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªÎ¢Ãî
+			//è½¬å¾®å¦™
 			return std::chrono::duration_cast<std::chrono::microseconds>(accumulated_time_).count();
 		}
-		//ºÁÃë
+		//æ¯«ç§’
 		std::int64_t milliseconds()
 		{
 			if (state_ == State::RUNNING)
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªºÁÃî
+			//è½¬æ¯«å¦™
 			return std::chrono::duration_cast<std::chrono::milliseconds>(accumulated_time_).count();
 		}
-		//Ãë
+		//ç§’
 		std::int64_t seconds()
 		{
 			if (state_ == State::RUNNING)
 			{
 				LOG_WARN("Stopwatch is running, please stop it first");
 			}
-			//×ªÃî
+			//è½¬å¦™
 			return std::chrono::duration_cast<std::chrono::seconds>(accumulated_time_).count();
 		}
 

@@ -1,0 +1,214 @@
+﻿//
+// Created by Administrator on 25-5-24.
+//
+
+#include "LevelManager.h"
+
+#include "LevelConfig.h"
+#include "Function/Framework/GameObject/GameObject.h"
+#include "Platform/ConfigManager/ConfigManager.h"
+#include "Function/Framework/Level/Level.h"
+#include "Function/Framework/ObjectManager/ObjectManager.h"
+#include "Function/Message/Message.h"
+#include "Resource/AssetManager/AssetManager.h"
+
+
+namespace TinyRenderer {
+    void LevelManager::startup() {
+        std::filesystem::path level_cfg_path = ConfigManager::get_instance().get_level_config_file_path();
+
+        // 配置level_config
+        LevelConfig level_config;
+        AssetManager::get_instance().load_by_path(level_cfg_path, level_config);
+
+        for (auto& level_guid : level_config.level_guid_array_) {
+            if (level_guid.is_valid())
+                level_guid_list_.push_back(level_guid);
+        }
+        for (auto& level_instance : level_config.level_instance_array_) {
+            if (level_instance) {
+                level_instance_list_.push_back(level_instance);
+            }
+        }
+        active_level_ = level_instance_list_.front();
+
+        // 首次创建场景，不存在active_level
+        if (active_level_ == nullptr) {
+            active_level_ = create_level("Sample Level", ConfigManager::get_instance().get_asset_fodder_path()/("level"));
+        }
+    }
+
+    void LevelManager::shutdown() {
+        save();
+    }
+
+    void LevelManager::set_active(const std::filesystem::path &meta_path) {
+        GUID guid = GUID::metafile_path_to_guid(meta_path);
+        if (guid.is_valid()) {
+            set_active(guid);
+        }
+    }
+    void LevelManager::set_active(const GUID &guid) {
+        if (!guid.is_valid())
+            return;
+        Object* obj = GUIDReference::get_instance().get_object(guid);
+        // 此时需要激活的level已存在
+        if (rttr::rttr_cast<Level*, Object*>(obj) != nullptr) {
+            active_level_ = rttr::rttr_cast<Level*, Object*>(obj);
+            // 将active_level_放到list前面
+            level_instance_list_.remove(active_level_);
+            level_instance_list_.push_front(active_level_);
+        }
+        else {
+            LOG_WARN("level not exist instance when set active");
+        }
+    }
+
+
+    void LevelManager::save() {
+        if (!active_level_)
+            return;
+
+        // 手动配置config保存
+        LevelConfig level_cfg;
+        for (auto& guid : level_guid_list_) {
+            if (guid.is_valid()) {
+                level_cfg.level_guid_array_.push_back(guid);
+            }
+        }
+        for (auto& level_instance : level_instance_list_) {
+            if (level_instance) {
+                level_cfg.level_instance_array_.push_back(level_instance);
+            }
+        }
+
+        // 保存config文件
+        AssetManager::get_instance().save_by_path(ConfigManager::get_instance().get_level_config_file_path(),level_cfg);
+
+        // 逐级调用level保存逻辑
+        for (auto& level_ptr : level_instance_list_) {
+            if (level_ptr) {
+                level_ptr->save();
+            }
+        }
+    }
+
+    Level *LevelManager::create_level(const std::string &level_name, const std::filesystem::path &parent_dir) {
+        Level* level_ptr = new Level(GUID::allocate_guid(), level_name);
+        if (!level_ptr)
+            return nullptr;
+        AssetManager::get_instance().save_to_meta(parent_dir, level_ptr);
+        AssetManager::get_instance().save(level_ptr);
+
+        level_guid_list_.push_back(level_ptr->get_guid());
+        level_instance_list_.push_back(level_ptr);
+        return level_ptr;
+    }
+
+    void LevelManager::tick(float delta_time) {
+        if (pending_load_level_guid_.is_valid())
+            pending_load_level();
+
+        Level* active_level = active_level_;
+        auto parent_go = active_level_->root_gameobject_list_.front();
+        auto child_go = parent_go->children_list_.front();
+
+        // parent_go->set_parent(child_go);
+
+        // TODO:添加GO Component测试序列化
+        // GameObject* go = GameObject::create("third GO" ,child_go);
+
+
+        // for (auto level_ptr : level_instance_list_) {
+        //     if (level_ptr && level_ptr->get_active()) {
+        //         level_ptr->tick();
+        //     }
+        // }
+
+        // set_active(level_instance_list_.back()->get_guid());
+        // unload_level(level_instance_list_.front()->get_guid());
+        // load_level(ConfigManager::get_instance().get_asset_fodder_path()/("level")/("2nd Level.Level.json"));
+        // create_level("2nd Level", ConfigManager::get_instance().get_asset_fodder_path()/("level"));
+    }
+
+    // 延迟到下一帧加载场景
+    void LevelManager::pending_load_level() {
+        // 使用移动语义，直接免了pending_load_level_guid_.clear操作
+        GUID pending_load_level_guid(std::move(pending_load_level_guid_));
+        pending_load_level_guid_.clear();
+
+        if (!pending_load_level_guid.is_valid())
+            return;
+        // 如果已经存在这个对象，也应该实例化
+        if (GUIDReference::get_instance().is_exist(pending_load_level_guid))
+            return;
+
+        Level* level_ptr = nullptr;
+        rttr::variant var = AssetManager::get_instance().load_variant(pending_load_level_guid);
+
+        if (!var.is_valid())
+            return;
+
+        level_ptr = var.get_value<Level*>();
+        if (!level_ptr)
+            return;
+
+        level_instance_list_.push_back(level_ptr);
+    }
+
+
+    void LevelManager::load_level(const std::filesystem::path &meta_path) {
+        GUID guid = GUID::metafile_path_to_guid(meta_path);
+        if (guid.is_valid()) {
+            load_level(guid);
+        }
+        return;
+    }
+
+    void LevelManager::load_level(const GUID &guid) {
+        // 防止重复实例化
+        if (GUIDReference::get_instance().is_exist(guid)) {
+            return;
+        }
+
+        pending_load_level_guid_ = guid;// 延迟到下一帧加载
+        return;
+    }
+
+    // 由Level调用
+    bool LevelManager::on_unload_level(const GUID &guid) {
+        if (!guid.is_valid()) {
+            LOG_WARN("LevelManager::on_unload_level: invalid GUID");
+            return false;
+        }
+        if (guid == active_level_->get_guid()) {
+            LOG_WARN("active level can not unload");
+            return false;
+        }
+        Object* obj_ptr = GUIDReference::get_instance().get_object(guid);
+        // 不存在这个实例，直接返回
+        Level* level_ptr = rttr::rttr_cast<Level*, Object*>(obj_ptr);
+        // 类型不匹配，直接返回
+        if (!level_ptr) {
+            LOG_WARN(guid.to_string() << " this guid not level type");
+            return false;
+        }
+
+        level_instance_list_.remove(level_ptr);
+        return true;
+    }
+
+    void LevelManager::unload_level_async(const std::filesystem::path &meta_path) {
+        GUID guid = GUID::metafile_path_to_guid(meta_path);
+        if (guid.is_valid()) {
+            unload_level_async(guid);
+        }
+    }
+
+    void LevelManager::unload_level_async(const GUID &guid) {
+        ObjectManager::get_instance().unload_object(guid);
+    }
+
+
+
+} // TinyRenderer

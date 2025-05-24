@@ -1,0 +1,18 @@
+{
+  "name" : "tinyrenderer",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "96d5fb3de135b86d7222c53f2352ca92827a156b",
+  "dependencies" : [ {
+    "name" : "nlohmann-json",
+    "version>=" : "3.12.0"
+  }, {
+    "name" : "rttr",
+    "version>=" : "0.9.6+20210811#1"
+  }, {
+    "name" : "vcpkg-cmake-config",
+    "version>=" : "2024-05-23"
+  }, {
+    "name" : "vcpkg-cmake",
+    "version>=" : "2024-04-23"
+  } ]
+}
