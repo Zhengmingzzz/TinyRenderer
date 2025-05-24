@@ -6,40 +6,41 @@
 #include "Page.h"
 
 namespace TinyRenderer {
-    enum class Occupancy_level : int; // Ç°ÏòÉùÃ÷
+    enum class Occupancy_level : int; // å‰å‘å£°æ˜
 
     class Allocator {
     public:
-        int block_size_; // Õâ¸öAllocator¸ºÔğ·ÖÅä¶à´óµÄ¿é
-        int max_blockNum_perPage_; // ×î´ó¿ÉÒÔ·ÖÅä¶àÉÙ
-        int min_blockNum_perPage_;
-        float current_blockNum_perPage_; // µ±Ç°Ò»¸öÒ³¿ÉÒÔ·ÖÅä¶àÉÙ¿é£¬¼ÆËãÊıÁ¿´óĞ¡Ê±Ê¹ÓÃfloatÀàĞÍ£¬·ÖÅäÊıÁ¿ÊÇ×ªÎªintÀàĞÍ
-        bool b_isRecycle_; // Óöµ½¿ÕÒ³ÊÇ·ñ»ØÊÕ
-        Page* priority_pagehead_; // Ë«ÏòÑ­»·Á´±í£¬ÇÒÃ¿´ÎÔö¼õÔªËØ»á×Ô¶¯µ÷ÕûË³Ğò£»±íÊ¾µ±Ç°allocatorËùÓĞµÄpageµÄµÚÒ»¸öpage
-        Page* closed_pagelist_; // µ¥ÏòµÄÁ´±í£¬±íÊ¾¿éÊıÎª0µÄÒ³
+        int block_size_; // è¿™ä¸ªAllocatorè´Ÿè´£åˆ†é…å¤šå¤§çš„å—
+        // int max_blockNum_perPage_; // æœ€å¤§å¯ä»¥åˆ†é…å¤šå°‘
+        // int min_blockNum_perPage_;
+        float blockNum_perPage_; // å½“å‰ä¸€ä¸ªé¡µå¯ä»¥åˆ†é…å¤šå°‘å—ï¼Œè®¡ç®—æ•°é‡å¤§å°æ—¶ä½¿ç”¨floatç±»å‹ï¼Œåˆ†é…æ•°é‡æ˜¯è½¬ä¸ºintç±»å‹
+        bool b_isRecycle_; // é‡åˆ°ç©ºé¡µæ˜¯å¦å›æ”¶
+        int recycle_time_ = 3; // è¿ç»­3æ¬¡pageä¸ºç©ºåˆ™å›æ”¶
+        Page* priority_pagehead_; // åŒå‘å¾ªç¯é“¾è¡¨ï¼Œä¸”æ¯æ¬¡å¢å‡å…ƒç´ ä¼šè‡ªåŠ¨è°ƒæ•´é¡ºåºï¼›è¡¨ç¤ºå½“å‰allocatoræ‰€æœ‰çš„pageçš„ç¬¬ä¸€ä¸ªpage
+        Page* closed_pagelist_; // å•å‘çš„é“¾è¡¨ï¼Œè¡¨ç¤ºå—æ•°ä¸º0çš„é¡µ
 
-    // ¼ÆËã·ÖÅäÖ¸±êµÄÒ»Ğ©²ÎÊı
+    // è®¡ç®—åˆ†é…æŒ‡æ ‡çš„ä¸€äº›å‚æ•°
     public:
-        // ³¤ÆÚÆ½¾ù»îÔ¾Öµ£º
-        float ewma_longterm_activity_;
-        float ewma_longterm_activity_factor_;
-        // »îÔ¾ÖµµÄ×î´ó/×îĞ¡ÏŞÖÆ£¬·ÀÖ¹¹ı¶ÈËõ·ÅÒ³µÄ´óĞ¡
-        float max_longterm_activity_;
-        float min_longterm_activity_;
+        // é•¿æœŸå¹³å‡æ´»è·ƒå€¼ï¼š
+        // float ewma_longterm_activity_;
+        // float ewma_longterm_activity_factor_;
+        // // æ´»è·ƒå€¼çš„æœ€å¤§/æœ€å°é™åˆ¶ï¼Œé˜²æ­¢è¿‡åº¦ç¼©æ”¾é¡µçš„å¤§å°
+        // float max_longterm_activity_;
+        // float min_longterm_activity_;
+        //
+        // // çŸ­æœŸå¹³å‡æ´»è·ƒå€¼ï¼š
+        // float ewma_shortterm_activity_;
+        // float ewma_shortterm_activity_factor_;
+        // float max_shortterm_activity_;
+        // float min_shortterm_activity_;
+        //
+        // // é¡µçš„æ‰©å¼ /ç¼©å°é˜ˆå€¼
+        // float expand_threshold_;
+        // float shrink_threshold_;
 
-        // ¶ÌÆÚÆ½¾ù»îÔ¾Öµ£º
-        float ewma_shortterm_activity_;
-        float ewma_shortterm_activity_factor_;
-        float max_shortterm_activity_;
-        float min_shortterm_activity_;
-
-        // Ò³µÄÀ©ÕÅ/ËõĞ¡ãĞÖµ
-        float expand_threshold_;
-        float shrink_threshold_;
-
-        // ¼ÆËãµ±Ç°Ö¡new/delete´ÎÊı
-        size_t new_count_;
-        size_t delete_count_;
+        // è®¡ç®—å½“å‰å¸§new/deleteæ¬¡æ•°
+        // size_t new_count_;
+        // size_t delete_count_;
 
     public:
         std::mutex allocator_mutex_;
@@ -47,19 +48,19 @@ namespace TinyRenderer {
 
 
     public:
-        void startUp(size_t block_size,size_t min_blockNum_perPage, size_t max_blockNum_perPage);
+        void startUp(size_t block_size,size_t blockNum_perPage);
         void shutDown();
 
         void* allocate();
-        bool try_dellocate(Page* target_page, Block* target_block, bool& isRecycle_page); // ÓÉMemoryManagerÌá¹©Ö¸¶¨µÄpage»ØÊÕptr,AllocatorÅĞ¶ÏptrÔÚPageÖĞ
+        bool try_dellocate(Page* target_page, Block* target_block, bool& isRecycle_page); // ç”±MemoryManageræä¾›æŒ‡å®šçš„pageå›æ”¶ptr,Allocatoråˆ¤æ–­ptråœ¨Pageä¸­
 
         void tick();
-        void refreshMetrics(Occupancy_level occupency_level);
+        // void refreshMetrics(Occupancy_level occupency_level);
     private:
         void insert_page(Page*& pagehead, Page* new_page);
         void insert_closedlist(Page*& pagehead, Page* target_page);
         void remove_page(Page*& pagehead, Page* target_page);
-        void swap_adjacent_page(Page* page1, Page* page2); // ½»»»Á½¸öÏàÁÚµÄÒ³ÔÚpagelistÖĞ
+        void swap_adjacent_page(Page* page1, Page* page2); // äº¤æ¢ä¸¤ä¸ªç›¸é‚»çš„é¡µåœ¨pagelistä¸­
     };
 
 } // TinyRenderer

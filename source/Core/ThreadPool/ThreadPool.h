@@ -17,22 +17,22 @@
 
 namespace TinyRenderer {
     enum class TaskPriority : uint8_t {
-        High        = 0,    // ×î¸ßÓÅÏÈ¼¶[5,7](@ref)
-        MediumHigh  = 1,    // ÖĞÉÏÓÅÏÈ¼¶
-        Medium      = 2,    // ÖĞÓÅÏÈ¼¶
-        MediumLow   = 3,    // ÖĞÏÂÓÅÏÈ¼¶
-        Low         = 4     // ×îµÍÓÅÏÈ¼¶
+        High        = 0,    // æœ€é«˜ä¼˜å…ˆçº§[5,7](@ref)
+        MediumHigh  = 1,    // ä¸­ä¸Šä¼˜å…ˆçº§
+        Medium      = 2,    // ä¸­ä¼˜å…ˆçº§
+        MediumLow   = 3,    // ä¸­ä¸‹ä¼˜å…ˆçº§
+        Low         = 4     // æœ€ä½ä¼˜å…ˆçº§
     };
 
     class ThreadPool {
     public:
-        // È«¾ÖÏß³Ì³Øµ¥Àı£¨±ÜÃâÖØ¸´´´½¨£©
+        // å…¨å±€çº¿ç¨‹æ± å•ä¾‹ï¼ˆé¿å…é‡å¤åˆ›å»ºï¼‰
         static ThreadPool& instance();
 
-        // ¿ªÆôÒ»¸ö¹¤×÷Ïß³Ì
+        // å¼€å¯ä¸€ä¸ªå·¥ä½œçº¿ç¨‹
         void launch_worker_thread();
 
-        // ¹Ø±ÕÒ»¸ö¿ÕÏĞ¹¤×÷Ïß³Ì
+        // å…³é—­ä¸€ä¸ªç©ºé—²å·¥ä½œçº¿ç¨‹
         void close_idle_worker() ;
 
         void startUp(size_t thread_count = 2, size_t min_thread_cnt = 2, size_t max_thread_cnt = std::thread::hardware_concurrency());
@@ -40,36 +40,36 @@ namespace TinyRenderer {
         void shutDown();
 
         template<class F, class... Args>
-        auto enqueue(F&& f, TaskPriority priority, Args&&... args) -> TaskResult<typename std::result_of<F(Args...)>::type> {
-            using return_type = typename std::result_of<F(Args...)>::type;
-
-            // ÓÃÖÇÄÜÖ¸Õë¹ÜÀípackaged_task£¬±ÜÃâÉúÃüÖÜÆÚÎÊÌâ
+        auto enqueue(TaskPriority priority, F&& f, Args&&... args) ->  TaskResult<typename std::invoke_result<F, Args...>::type>{
+            using return_type = typename std::invoke_result<F, Args...>::type;
+            // LOG_INFO(typeid(return_type).name());
+            // ç”¨æ™ºèƒ½æŒ‡é’ˆç®¡ç†packaged_taskï¼Œé¿å…ç”Ÿå‘½å‘¨æœŸé—®é¢˜
             auto task = std::make_shared<std::packaged_task<return_type(void)>>(
-                // ·µ»ØÒ»¸ö¿Éµ÷ÓÃ¶ÔÏó
+                // è¿”å›ä¸€ä¸ªå¯è°ƒç”¨å¯¹è±¡
                 std::bind(std::forward<F>(f), std::forward<Args>(args)...)
             );
 
 
-            // ´´½¨TaskResult£¬»ñÈ¡future¶ÔÏó
+            // åˆ›å»ºTaskResultï¼Œè·å–futureå¯¹è±¡
             std::future<return_type> fut_res =  task->get_future();
 
             {
                 std::unique_lock<std::mutex> lock(queue_mutex);
-                // Èôµ±Ç°Ïß³ÌÒÑ¾­Í£Ö¹£¬È´ÔÙ´Îµ÷ÓÃÈë¶Ó
+                // è‹¥å½“å‰çº¿ç¨‹å·²ç»åœæ­¢ï¼Œå´å†æ¬¡è°ƒç”¨å…¥é˜Ÿ
                 if(threadpool_stop.load(std::memory_order_seq_cst)) {
                     LOG_ERROR("enqueue on stopped queue");
                 }
 
-                // ½«ÈÎÎñ·â×°Îªvoid()ÀàĞÍ²¢¼ÓÈë¶ÓÁĞ
+                // å°†ä»»åŠ¡å°è£…ä¸ºvoid()ç±»å‹å¹¶åŠ å…¥é˜Ÿåˆ—
                 tasks.emplace(Task{ [task]() { (*task)();}, priority });
             }
 
-            // »½ĞÑÒ»¸öµÈ´ıÏß³Ì[4,7](@ref)
+            // å”¤é†’ä¸€ä¸ªç­‰å¾…çº¿ç¨‹[4,7](@ref)
             condition.notify_one();
             return fut_res;
         }
 
-        // ÓÉÒıÇæÖ÷Ñ­»·¸ù¾İµ±Ç°Ö¡ÂÊµ÷½ÚÏß³ÌÊıÁ¿£¬¶¯Ì¬µ÷ÕûÏß³ÌÊı
+        // ç”±å¼•æ“ä¸»å¾ªç¯æ ¹æ®å½“å‰å¸§ç‡è°ƒèŠ‚çº¿ç¨‹æ•°é‡ï¼ŒåŠ¨æ€è°ƒæ•´çº¿ç¨‹æ•°
         void adjust_workers() ;
 
         ~ThreadPool()= default;
@@ -78,10 +78,10 @@ namespace TinyRenderer {
             std::function<void()> func;
             TaskPriority priority;
         };
-        // ¶¨ÒåÈÎÎñ±È½ÏÆ÷£¨ÓÅÏÈ¼¶Ğ¡µÄÓÅÏÈ£©
+        // å®šä¹‰ä»»åŠ¡æ¯”è¾ƒå™¨ï¼ˆä¼˜å…ˆçº§å°çš„ä¼˜å…ˆï¼‰
         struct TaskComparator {
             bool operator()(const Task& a, const Task& b) {
-                return a.priority > b.priority; // Ğ¡¶¥¶ÑÂß¼­
+                return a.priority > b.priority; // å°é¡¶å †é€»è¾‘
             }
         };
 
@@ -106,20 +106,21 @@ namespace TinyRenderer {
         };
 
     private:
-        // Ïß³ÌµÄ×î´ó/Ğ¡ÊıÁ¿
+        // çº¿ç¨‹çš„æœ€å¤§/å°æ•°é‡
         static size_t max_thread_count;
         static size_t min_thread_count;
-        // ¹¤×÷Ïß³ÌÁĞ±í£¬Ê¹ÓÃÖÇÄÜÖ¸Õë±£Ö¤ÆäÉúÃüÖÜÆÚ
+        // å·¥ä½œçº¿ç¨‹åˆ—è¡¨ï¼Œä½¿ç”¨æ™ºèƒ½æŒ‡é’ˆä¿è¯å…¶ç”Ÿå‘½å‘¨æœŸ
         std::list<std::shared_ptr<ThreadBlock>> workers;
-        // ÓÅÏÈ¶ÓÁĞ£¬¹¤×÷Ïß³Ì»á×Ô¶¯´ÓÖĞÈ¡ÈÎÎñ
+        // ä¼˜å…ˆé˜Ÿåˆ—ï¼Œå·¥ä½œçº¿ç¨‹ä¼šè‡ªåŠ¨ä»ä¸­å–ä»»åŠ¡
         std::priority_queue<Task, std::vector<Task>, TaskComparator> tasks;
-        // ¶ÓÁĞËø£¬²Ù×÷¹¤×÷/ÈÎÎñ¶ÓÁĞÊ±ĞèÒªÉÏËø ÒÔÃâ¶ÁÈ¡µ½ÔàÊı¾İ
-        // ¶ÁÈ¡ÍêÓ¦¸Ã¾¡¿ìÊÍ·Å£¬ÈÎÎñÖĞµÄÌõ¼ş±äÁ¿ÒÀ¿¿Õâ¸öËø²ÅÄÜÈ¡ÈÎÎñ
+        // é˜Ÿåˆ—é”ï¼Œæ“ä½œå·¥ä½œ/ä»»åŠ¡é˜Ÿåˆ—æ—¶éœ€è¦ä¸Šé” ä»¥å…è¯»å–åˆ°è„æ•°æ®
+        // è¯»å–å®Œåº”è¯¥å°½å¿«é‡Šæ”¾ï¼Œä»»åŠ¡ä¸­çš„æ¡ä»¶å˜é‡ä¾é è¿™ä¸ªé”æ‰èƒ½å–ä»»åŠ¡
         std::mutex queue_mutex;
-        // ÊµÀı»¯Ëø£¬·ÀÖ¹¶àÏß³Ì¶à´ÎÊµÀı»¯µ¥Àı¶ÔÏó
-        static std::mutex instance_mutex;
+        // çº¿ç¨‹é”ï¼Œæ“ä½œçº¿ç¨‹æ•°é‡æ—¶ä½¿ç”¨
+        std::mutex thread_mutex_;
+        static inline std::once_flag instance_flag_;
         std::condition_variable condition;
-        // Í£Ö¹±êÊ¶·û
+        // åœæ­¢æ ‡è¯†ç¬¦
         std::atomic<bool> threadpool_stop{false};
     };
 }

@@ -4,43 +4,29 @@
 
 #include "Allocator.h"
 
-#include <bits/fs_fwd.h>
-
 #include "Page.h"
 #include "Function/Message/Message.h"
 #include "MemoryManager.h"
-#include "Function/Counter/CounterManager.h"
 
 #include "Core/DebugMemoryManager/DebugAllocator.h"
 
 namespace TinyRenderer {
-    void Allocator::startUp(size_t block_size,size_t min_blockNum_perPage, size_t max_blockNum_perPage) {
+    void Allocator::startUp(size_t block_size,size_t blockNum_perPage) {
         ASSERT(block_size>0);
-        ASSERT(max_blockNum_perPage>0);
-        if (max_blockNum_perPage < min_blockNum_perPage) {
-            min_blockNum_perPage = max_blockNum_perPage;
-        }
+        ASSERT(blockNum_perPage>0);
 
         block_size_ = block_size;
-        max_blockNum_perPage_ = max_blockNum_perPage;
-        current_blockNum_perPage_ = min_blockNum_perPage;
-        min_blockNum_perPage_ = min_blockNum_perPage;
+        blockNum_perPage_ = blockNum_perPage;
         priority_pagehead_ = nullptr;
         closed_pagelist_ = nullptr;
 
-        ewma_longterm_activity_ = 0.f;
-        ewma_longterm_activity_factor_ = 0.7f;
-
-        ewma_shortterm_activity_ = 0.f;
-        ewma_shortterm_activity_factor_ = 0.3f;
-
-        DEBUG_MEM_ALLOCATOR_STARTUP(block_size, min_blockNum_perPage, max_blockNum_perPage);
+        // DEBUG_MEM_ALLOCATOR_STARTUP(block_size, min_blockNum_perPage, max_blockNum_perPage);
     }
 
     void Allocator::shutDown() {
         Page* cur_page = priority_pagehead_, *next_page = nullptr;
-        // ´¦Àípagelist
-        // °Ñ×îºóÒ»¸ö½ÚµãµÄnextÖ¸Ïònullptr£¬·ÀÖ¹Ñ­»·±éÀú
+        // å¤„ç†pagelist
+        // æŠŠæœ€åä¸€ä¸ªèŠ‚ç‚¹çš„nextæŒ‡å‘nullptrï¼Œé˜²æ­¢å¾ªç¯éå†
         if (cur_page != nullptr)
             cur_page->prev->next = nullptr;
         while (cur_page != nullptr) {
@@ -50,7 +36,7 @@ namespace TinyRenderer {
             cur_page = next_page;
         }
 
-        // ´¦Àíclosed_pagelist
+        // å¤„ç†closed_pagelist
         cur_page = closed_pagelist_;
         if (cur_page != nullptr)
             cur_page->prev->next = nullptr;
@@ -67,24 +53,24 @@ namespace TinyRenderer {
         void* res = nullptr;
         Page* cur_page = priority_pagehead_;
 
-        // 1. ÅĞ¶ÏÊÇ·ñ»¹ÓĞ¿ÕµÄ¿é
-        // priority_pagehead_Îª¿ÕËµÃ÷Ã»ÓĞ¿ÕÓà¿éµÄÒ³ÁË
+        // 1. åˆ¤æ–­æ˜¯å¦è¿˜æœ‰ç©ºçš„å—
+        // priority_pagehead_ä¸ºç©ºè¯´æ˜æ²¡æœ‰ç©ºä½™å—çš„é¡µäº†
         if (cur_page == nullptr) {
-            Page* new_page = Page::allocate_newPage(block_size_, static_cast<int>(current_blockNum_perPage_ + 0.9), this);
-            insert_page(priority_pagehead_, new_page); // ²åÈëĞÂÒ³µ½ÓÅÏÈÁ´±í
+            Page* new_page = Page::allocate_newPage(block_size_, blockNum_perPage_, this);
+            insert_page(priority_pagehead_, new_page); // æ’å…¥æ–°é¡µåˆ°ä¼˜å…ˆé“¾è¡¨
             cur_page = new_page;
         }
 
-        // 2. ·ÖÅäº¬ÓĞ¿ÕÓà¿éµÄÒ³
-        // cur_page±Ø¶¨»áÓĞ¿ÕÓàµÄ¿é
+        // 2. åˆ†é…å«æœ‰ç©ºä½™å—çš„é¡µ
+        // cur_pageå¿…å®šä¼šæœ‰ç©ºä½™çš„å—
         if (cur_page->allocate_block(res)) {
-            // Èç¹ûµ±Ç°Ò³¿éÊıºÄ¾¡£¬½«Õâ¸öÒ³×ªÒÆ³öÓÅÏÈÁ´±í£¬ÒÆÈëclosed_pagelist
+            // å¦‚æœå½“å‰é¡µå—æ•°è€—å°½ï¼Œå°†è¿™ä¸ªé¡µè½¬ç§»å‡ºä¼˜å…ˆé“¾è¡¨ï¼Œç§»å…¥closed_pagelist
             if (cur_page->current_block_num_ == 0) {
-                remove_page(priority_pagehead_ ,cur_page); // ½«cur_pageÒÆ³öpagelist£¬²åÈëclosed_pagelist
+                remove_page(priority_pagehead_ ,cur_page); // å°†cur_pageç§»å‡ºpagelistï¼Œæ’å…¥closed_pagelist
                 insert_page(closed_pagelist_, cur_page);
 
             }
-            new_count_ += 1;
+            // new_count_ += 1;
         }
 
         return res;
@@ -99,49 +85,55 @@ namespace TinyRenderer {
         if (target_page->try_deallocate_block(target_block) == false)
             return false;
 
-        delete_count_ += 1;
+        // delete_count_ += 1;
 
-        // Èç¹ûÒ³Îª¿ÕÁË£¬¸ù¾İb_isRecycleÅĞ¶ÏÊÇ·ñÒª»ØÊÕÒ³
+        // å¦‚æœé¡µä¸ºç©ºäº†ï¼Œæ ¹æ®b_isRecycleåˆ¤æ–­æ˜¯å¦è¦å›æ”¶é¡µ
         if (target_page->current_block_num_ == target_page->total_block_num_) {
-            // ´ËÊ±¿ÉÒÔÊÕ»ØÒ³
+            recycle_time_--;
+            if (recycle_time_ <= 0)
+                b_isRecycle_ = true;
+            // æ­¤æ—¶å¯ä»¥æ”¶å›é¡µ
             if (b_isRecycle_) {
-                // ´Ópriority_pagelistÈ¡³ö¸Ã½Úµã
+                recycle_time_ = 3; // æ¢å¤å›æ”¶åˆ¤æ–­
+                b_isRecycle_ = false;
+
+                // ä»priority_pagelistå–å‡ºè¯¥èŠ‚ç‚¹
                 Page* prev_page = target_page->prev;
                 Page* next_page = target_page->next;
                 prev_page->next = next_page;
                 next_page->prev = prev_page;
-                // Èç¹û¸üĞÂµÄÒ³½ÚµãÎªÍ·½áµã
+                // å¦‚æœæ›´æ–°çš„é¡µèŠ‚ç‚¹ä¸ºå¤´ç»“ç‚¹
                 if (target_page == priority_pagehead_) {
-                    // Èç¹ûÖ»ÓĞÒ»¸ö½Úµã£¬ÔòÖÃ¿Õ£»·ñÔò¸üĞÂÎªnext½Úµã
+                    // å¦‚æœåªæœ‰ä¸€ä¸ªèŠ‚ç‚¹ï¼Œåˆ™ç½®ç©ºï¼›å¦åˆ™æ›´æ–°ä¸ºnextèŠ‚ç‚¹
                     priority_pagehead_ = (next_page == priority_pagehead_) ? nullptr : next_page;
                 }
-                // ÊÍ·ÅÕâ¸öÒ³
+                // é‡Šæ”¾è¿™ä¸ªé¡µ
                 free(target_page);
-                // Í¨ÖªMemoryManagerÒÑ¾­Íê³ÉÒ³µÄÊÍ·Å£¬É¾³ı¶ÔÓ¦½Úµã
+                // é€šçŸ¥MemoryManagerå·²ç»å®Œæˆé¡µçš„é‡Šæ”¾ï¼Œåˆ é™¤å¯¹åº”èŠ‚ç‚¹
                 isRecycle_page = true;
                 //DEBUG_MEM_DEALLOCATE_NEW_PAGE(block_size_, target_page);
             }
         }
-        // µ÷ÕûpagelistµÄÎ»ÖÃ
+        // è°ƒæ•´pagelistçš„ä½ç½®
         else {
-            // ´ú±íÕâ¸öÒ³Ö®Ç°¿éÊıÎª0£¬ÏÖÔÚÊÍ·ÅÁËÒ»¸ö¿é±äÎª1£¬´æ´¢ÓÚclosed_pagelistÖĞ
+            // ä»£è¡¨è¿™ä¸ªé¡µä¹‹å‰å—æ•°ä¸º0ï¼Œç°åœ¨é‡Šæ”¾äº†ä¸€ä¸ªå—å˜ä¸º1ï¼Œå­˜å‚¨äºclosed_pagelistä¸­
             if (target_page->current_block_num_ == 1) {
-                // ´Óclosed_listÖĞÄÃ³öÀ´£¬×ªµ½pagelistÖĞ
+                // ä»closed_listä¸­æ‹¿å‡ºæ¥ï¼Œè½¬åˆ°pagelistä¸­
                 remove_page(closed_pagelist_, target_page);
                 insert_page(priority_pagehead_, target_page);
             }
-            // ·´Ö®ÔòËµÃ÷Õâ¸öpageÊÇÔÚpagelistÖĞ£¬¶ÔËü½øĞĞÎ»ÖÃµÄµ÷Õû
+            // åä¹‹åˆ™è¯´æ˜è¿™ä¸ªpageæ˜¯åœ¨pagelistä¸­ï¼Œå¯¹å®ƒè¿›è¡Œä½ç½®çš„è°ƒæ•´
             else {
                 Page* prev_page = target_page->prev;
                 Page* next_page = target_page->next;
-                // µ±Ç°¸ü¸ÄµÄÒ³ÊıÁ¿´óÓÚÏÂÒ»¸öÒ³£¬ÏòºóÒÆ
+                // å½“å‰æ›´æ”¹çš„é¡µæ•°é‡å¤§äºä¸‹ä¸€ä¸ªé¡µï¼Œå‘åç§»
                 if (target_page->current_block_num_ > next_page->current_block_num_) {
                     swap_adjacent_page(target_page, next_page);
                     if (target_page == priority_pagehead_) {
                         priority_pagehead_ = next_page;
                     }
                 }
-                // µ±Ç°¸ü¸ÄµÄÒ³ÊıÁ¿Ğ¡ÓÚÉÏÒ»¸öÒ³£¬ÏòÇ°ÒÆ
+                // å½“å‰æ›´æ”¹çš„é¡µæ•°é‡å°äºä¸Šä¸€ä¸ªé¡µï¼Œå‘å‰ç§»
                 else if (target_page->current_block_num_ < prev_page->current_block_num_) {
                     swap_adjacent_page(prev_page, target_page);
                     if (target_page == priority_pagehead_) {
@@ -151,96 +143,96 @@ namespace TinyRenderer {
             }
         }
 
-        // ·µ»Ø¿éÊÇ·ñ±»ÊÕ»Ø
+        // è¿”å›å—æ˜¯å¦è¢«æ”¶å›
         return true;
     }
 
-    void Allocator::tick() {
-        float difference = new_count_ - delete_count_;
-        // Èç¹ûµ±Ç°Ã»ÓĞnew£¬Ã»ÓĞdelete£¬Ä¬ÈÏ¼õÉÙ²¿·ÖÒ³
-        if (new_count_ == 0 && delete_count_ == 0) {
-            difference = 0.95f;
-        }
-        ewma_longterm_activity_ = (ewma_longterm_activity_ * ewma_longterm_activity_factor_) + difference * (1 - ewma_longterm_activity_factor_);
-        ewma_shortterm_activity_ = (ewma_shortterm_activity_ * ewma_shortterm_activity_factor_) + difference * (1 - ewma_shortterm_activity_factor_);
-        new_count_ = 0;
-        delete_count_ = 0;
-    }
+    // void Allocator::tick() {
+    //     float difference = new_count_ - delete_count_;
+    //     // å¦‚æœå½“å‰æ²¡æœ‰newï¼Œæ²¡æœ‰deleteï¼Œé»˜è®¤å‡å°‘éƒ¨åˆ†é¡µ
+    //     if (new_count_ == 0 && delete_count_ == 0) {
+    //         difference = 0.95f;
+    //     }
+    //     ewma_longterm_activity_ = (ewma_longterm_activity_ * ewma_longterm_activity_factor_) + difference * (1 - ewma_longterm_activity_factor_);
+    //     ewma_shortterm_activity_ = (ewma_shortterm_activity_ * ewma_shortterm_activity_factor_) + difference * (1 - ewma_shortterm_activity_factor_);
+    //     new_count_ = 0;
+    //     delete_count_ = 0;
+    // }
 
-    void Allocator::refreshMetrics(Occupancy_level occupancy_level) {
-        if (occupancy_level == Occupancy_level::low) {
-            // ×î´ó/×îĞ¡¿ÉÒÔËõ·ÅÎªÔ­À´Ò³µÄ¶àÉÙ±¶
-            max_longterm_activity_ = 2.f;
-            min_longterm_activity_ = 0.7f;
-            max_shortterm_activity_ = 1.5f;
-            min_shortterm_activity_ = 0.8f;
-            // Ò³´ïµ½À©ÕÅ/Ëõ·ÅÌõ¼şµÄãĞÖµ
-            expand_threshold_ = 0.8f;
-            shrink_threshold_ = 0.6f;
-        }
-        else if (occupancy_level == Occupancy_level::medium) {
-            // ×î´ó/×îĞ¡¿ÉÒÔËõ·ÅÎªÔ­À´Ò³µÄ¶àÉÙ±¶
-            max_longterm_activity_ = 1.5f;
-            min_longterm_activity_ = 0.7f;
-            max_shortterm_activity_ = 1.1f;
-            min_shortterm_activity_ = 0.9f;
-            // Ò³´ïµ½À©ÕÅ/Ëõ·ÅÌõ¼şµÄãĞÖµ
-            expand_threshold_ = 1.2f;
-            shrink_threshold_ = 0.4f;
-        }
-        else if (occupancy_level == Occupancy_level::high) {
-            // ×î´ó/×îĞ¡¿ÉÒÔËõ·ÅÎªÔ­À´Ò³µÄ¶àÉÙ±¶
-            max_longterm_activity_ = 1.2f;
-            min_longterm_activity_ = 0.3f;
-            max_shortterm_activity_ = 1.f;
-            min_shortterm_activity_ = 0.8f;
-            // Ò³´ïµ½À©ÕÅ/Ëõ·ÅÌõ¼şµÄãĞÖµ
-            expand_threshold_ = 1.5;
-            shrink_threshold_ = 0.2f;
-        }
-
-        float longterm_factor = 0, shortterm_factor = 0;
-        // Ò³µÄ·ÖÅä´óĞ¡ÒÔ³¤ÆÚ»îÔ¾ÖµÎªÖ÷£¬¶ÌÆÚ»îÔ¾ÖµÓÃÓÚ¸ù¾İµ±Ç°Çé¿öÎ¢µ÷
-        float current_blockNum_perPage = current_blockNum_perPage_;
-        // µ±Ç°³¤ÆÚ»îÔ¾Öµ´óÓÚÀ©ÕÅµÄ±ß½ç
-        if (ewma_longterm_activity_ > current_blockNum_perPage * expand_threshold_) {
-            // Ôö¼ÓÃ¿Ò³ÊıÁ¿£¬µ«ÊÇÏŞÖÆÆä×î´óÉÏÏŞ
-            longterm_factor = std::min(ewma_longterm_activity_, max_longterm_activity_);
-        }
-        // µ±Ç°³¤ÆÚ»îÔ¾ÖµĞ¡ÓÚËõĞ¡µÄ±ß½ç
-        else if (ewma_longterm_activity_ < current_blockNum_perPage * shrink_threshold_) {
-            // ËõĞ¡Ã¿Ò³ÊıÁ¿£¬µ«ÊÇÏŞÖÆÆä×îĞ¡ÏÂÏŞ
-            longterm_factor = std::max(ewma_longterm_activity_, min_longterm_activity_);
-        }
-        // µ±Ç°¶ÌÆÚ»îÔ¾Öµ´óÓÚÀ©ÕÅµÄ±ß½ç
-        if (ewma_shortterm_activity_ > current_blockNum_perPage * expand_threshold_) {
-            shortterm_factor = std::min(ewma_shortterm_activity_, max_shortterm_activity_);
-        }
-        // µ±Ç°¶ÌÆÚ»îÔ¾ÖµĞ¡ÓÚËõĞ¡µÄ±ß½ç
-        else if (ewma_shortterm_activity_ < current_blockNum_perPage * shrink_threshold_) {
-            shortterm_factor = std::max(ewma_shortterm_activity_, min_shortterm_activity_);
-        }
-
-        float res = longterm_factor == 0 ? shortterm_factor : longterm_factor;
-        b_isRecycle_ = res < 1; // Èç¹ûresĞ¡ÓÚ1£¬ËµÃ÷µ±Ç°ĞèÇóÏÂ½µ£¬ÔÊĞíËõÒ³
-        current_blockNum_perPage_ = res * current_blockNum_perPage;
-        // ²»ÄÜ³¬¹ı×îĞ¡ÏŞÖÆ
-        current_blockNum_perPage_ = std::max(static_cast<float>(min_blockNum_perPage_), current_blockNum_perPage_);
-        // ²»ÄÜ³¬¹ı×î´óÉÏÏŞ
-        current_blockNum_perPage_ = std::min(current_blockNum_perPage_, static_cast<float>(max_blockNum_perPage_));
-
-        // DEBUG_MEM_ADJUST_METRIC(block_size_ ,static_cast<int>(occupancy_level), ewma_longterm_activity_, current_blockNum_perPage * expand_threshold_, ewma_shortterm_activity_, current_blockNum_perPage * shrink_threshold_, current_blockNum_perPage);
-    }
+    // void Allocator::refreshMetrics(Occupancy_level occupancy_level) {
+    //     if (occupancy_level == Occupancy_level::low) {
+    //         // æœ€å¤§/æœ€å°å¯ä»¥ç¼©æ”¾ä¸ºåŸæ¥é¡µçš„å¤šå°‘å€
+    //         max_longterm_activity_ = 2.f;
+    //         min_longterm_activity_ = 0.7f;
+    //         max_shortterm_activity_ = 1.5f;
+    //         min_shortterm_activity_ = 0.8f;
+    //         // é¡µè¾¾åˆ°æ‰©å¼ /ç¼©æ”¾æ¡ä»¶çš„é˜ˆå€¼
+    //         expand_threshold_ = 0.8f;
+    //         shrink_threshold_ = 0.6f;
+    //     }
+    //     else if (occupancy_level == Occupancy_level::medium) {
+    //         // æœ€å¤§/æœ€å°å¯ä»¥ç¼©æ”¾ä¸ºåŸæ¥é¡µçš„å¤šå°‘å€
+    //         max_longterm_activity_ = 1.5f;
+    //         min_longterm_activity_ = 0.7f;
+    //         max_shortterm_activity_ = 1.1f;
+    //         min_shortterm_activity_ = 0.9f;
+    //         // é¡µè¾¾åˆ°æ‰©å¼ /ç¼©æ”¾æ¡ä»¶çš„é˜ˆå€¼
+    //         expand_threshold_ = 1.2f;
+    //         shrink_threshold_ = 0.4f;
+    //     }
+    //     else if (occupancy_level == Occupancy_level::high) {
+    //         // æœ€å¤§/æœ€å°å¯ä»¥ç¼©æ”¾ä¸ºåŸæ¥é¡µçš„å¤šå°‘å€
+    //         max_longterm_activity_ = 1.2f;
+    //         min_longterm_activity_ = 0.3f;
+    //         max_shortterm_activity_ = 1.f;
+    //         min_shortterm_activity_ = 0.8f;
+    //         // é¡µè¾¾åˆ°æ‰©å¼ /ç¼©æ”¾æ¡ä»¶çš„é˜ˆå€¼
+    //         expand_threshold_ = 1.5;
+    //         shrink_threshold_ = 0.2f;
+    //     }
+    //
+    //     float longterm_factor = 0, shortterm_factor = 0;
+    //     // é¡µçš„åˆ†é…å¤§å°ä»¥é•¿æœŸæ´»è·ƒå€¼ä¸ºä¸»ï¼ŒçŸ­æœŸæ´»è·ƒå€¼ç”¨äºæ ¹æ®å½“å‰æƒ…å†µå¾®è°ƒ
+    //     float current_blockNum_perPage = current_blockNum_perPage_;
+    //     // å½“å‰é•¿æœŸæ´»è·ƒå€¼å¤§äºæ‰©å¼ çš„è¾¹ç•Œ
+    //     if (ewma_longterm_activity_ > current_blockNum_perPage * expand_threshold_) {
+    //         // å¢åŠ æ¯é¡µæ•°é‡ï¼Œä½†æ˜¯é™åˆ¶å…¶æœ€å¤§ä¸Šé™
+    //         longterm_factor = std::min(ewma_longterm_activity_, max_longterm_activity_);
+    //     }
+    //     // å½“å‰é•¿æœŸæ´»è·ƒå€¼å°äºç¼©å°çš„è¾¹ç•Œ
+    //     else if (ewma_longterm_activity_ < current_blockNum_perPage * shrink_threshold_) {
+    //         // ç¼©å°æ¯é¡µæ•°é‡ï¼Œä½†æ˜¯é™åˆ¶å…¶æœ€å°ä¸‹é™
+    //         longterm_factor = std::max(ewma_longterm_activity_, min_longterm_activity_);
+    //     }
+    //     // å½“å‰çŸ­æœŸæ´»è·ƒå€¼å¤§äºæ‰©å¼ çš„è¾¹ç•Œ
+    //     if (ewma_shortterm_activity_ > current_blockNum_perPage * expand_threshold_) {
+    //         shortterm_factor = std::min(ewma_shortterm_activity_, max_shortterm_activity_);
+    //     }
+    //     // å½“å‰çŸ­æœŸæ´»è·ƒå€¼å°äºç¼©å°çš„è¾¹ç•Œ
+    //     else if (ewma_shortterm_activity_ < current_blockNum_perPage * shrink_threshold_) {
+    //         shortterm_factor = std::max(ewma_shortterm_activity_, min_shortterm_activity_);
+    //     }
+    //
+    //     float res = longterm_factor == 0 ? shortterm_factor : longterm_factor;
+    //     b_isRecycle_ = res < 1; // å¦‚æœreså°äº1ï¼Œè¯´æ˜å½“å‰éœ€æ±‚ä¸‹é™ï¼Œå…è®¸ç¼©é¡µ
+    //     current_blockNum_perPage_ = res * current_blockNum_perPage;
+    //     // ä¸èƒ½è¶…è¿‡æœ€å°é™åˆ¶
+    //     current_blockNum_perPage_ = std::max(static_cast<float>(min_blockNum_perPage_), current_blockNum_perPage_);
+    //     // ä¸èƒ½è¶…è¿‡æœ€å¤§ä¸Šé™
+    //     current_blockNum_perPage_ = std::min(current_blockNum_perPage_, static_cast<float>(max_blockNum_perPage_));
+    //
+    //     // DEBUG_MEM_ADJUST_METRIC(block_size_ ,static_cast<int>(occupancy_level), ewma_longterm_activity_, current_blockNum_perPage * expand_threshold_, ewma_shortterm_activity_, current_blockNum_perPage * shrink_threshold_, current_blockNum_perPage);
+    // }
 
     void Allocator::insert_page(Page*& pagehead, Page* const new_page) {
-        // Ã»ÓĞ½ÚµãµÄÇé¿ö
+        // æ²¡æœ‰èŠ‚ç‚¹çš„æƒ…å†µ
         if (pagehead == nullptr) {
             pagehead = new_page;
             new_page->next = pagehead;
             new_page->prev = pagehead;
             return;
         }
-        // µ±Ç°Ê×Ò³µÄ¿éÊı´óÓÚĞÂÒ³µÄ¿éÊı£¬Ôò²åÈëµ½Í·½áµã
+        // å½“å‰é¦–é¡µçš„å—æ•°å¤§äºæ–°é¡µçš„å—æ•°ï¼Œåˆ™æ’å…¥åˆ°å¤´ç»“ç‚¹
         if (pagehead->current_block_num_ >= new_page->current_block_num_) {
             new_page->next = pagehead;
             new_page->prev = pagehead->prev;
@@ -249,10 +241,10 @@ namespace TinyRenderer {
             return;
         }
 
-        //´óÓÚµÈÓÚ1¸ö½ÚµãµÄÇé¿ö
-        // ½«new_page²åÈëµ½cur_pageÖ®ºó
+        //å¤§äºç­‰äº1ä¸ªèŠ‚ç‚¹çš„æƒ…å†µ
+        // å°†new_pageæ’å…¥åˆ°cur_pageä¹‹å
         Page* cur_page = pagehead;
-        //ÕÒµ½µÚÒ»¸öĞ¡ÓÚnew_page¿éÊıµÄ½Úµã
+        //æ‰¾åˆ°ç¬¬ä¸€ä¸ªå°äºnew_pageå—æ•°çš„èŠ‚ç‚¹
         while (cur_page->prev != pagehead && cur_page->prev->current_block_num_ > new_page->current_block_num_) {
             cur_page = cur_page->prev;
         }
@@ -266,16 +258,16 @@ namespace TinyRenderer {
     void Allocator::remove_page(Page*& pagehead, Page* const target_page) {
         ASSERT(target_page != nullptr);
 
-        // ´Ópriority_pagelistÈ¡³ö¸Ã½Úµã
+        // ä»priority_pagelistå–å‡ºè¯¥èŠ‚ç‚¹
         Page* prev_page = target_page->prev;
         Page* next_page = target_page->next;
 
         prev_page->next = next_page;
         next_page->prev = prev_page;
 
-        // Èç¹û¸üĞÂµÄÒ³½ÚµãÎªÍ·½áµã
+        // å¦‚æœæ›´æ–°çš„é¡µèŠ‚ç‚¹ä¸ºå¤´ç»“ç‚¹
         if (target_page == pagehead) {
-            // Èç¹ûÖ»ÓĞÒ»¸ö½Úµã£¬ÔòÖÃ¿Õ£»·ñÔò¸üĞÂÎªnext½Úµã
+            // å¦‚æœåªæœ‰ä¸€ä¸ªèŠ‚ç‚¹ï¼Œåˆ™ç½®ç©ºï¼›å¦åˆ™æ›´æ–°ä¸ºnextèŠ‚ç‚¹
             pagehead = (next_page == pagehead) ? nullptr : next_page;
         }
     }
@@ -288,7 +280,7 @@ namespace TinyRenderer {
         Page* prev_page = page_front->prev;
         Page* next_page = page_back->next;
 
-        // ÏÈ°ÑÁ½¸ö½ÚµãÏàÁ¬
+        // å…ˆæŠŠä¸¤ä¸ªèŠ‚ç‚¹ç›¸è¿
         page_back->next = page_front;
         page_front->prev = page_back;
 

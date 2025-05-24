@@ -10,27 +10,27 @@ namespace TinyRenderer {
     class MemoryManager;
     class DebugMemoryManager {
     public:
-        void startUp();
+        void startup();
         void shutDown();
 
-        void on_allocator_startUp(int block_size, int min_block_num_perPage, int max_block_num_perPage);
+        // void on_allocator_startUp(int block_size, int min_block_num_perPage, int max_block_num_perPage);
 
         void on_alloc_block(int block_size,void* block, std::string&& file, size_t line);
         void on_dealloc_block(int block_size, void* block);
 
-        void on_allocate_newPage(void* page, int block_size, int block_num);
+        // void on_allocate_newPage(void* page, int block_size, int block_num);
 
 
     private:
-        ordered_json log_mem_info();
+        //ordered_json log_mem_info();
     private:
-        using time_point = std::chrono::system_clock::time_point;
-
-        size_t total_alloc_cnt_;
+        // using time_point = std::chrono::system_clock::time_point;
+        //
+        // size_t total_alloc_cnt_;
         std::vector<DebugAllocator> debug_allocators_;
-        time_point start_time_;
-        time_point end_time_;
-        size_t survival_time_;
+        // time_point start_time_;
+        // time_point end_time_;
+        // size_t survival_time_;
     public:
         static DebugMemoryManager& instance();
         DebugMemoryManager(const DebugMemoryManager&) = delete;
@@ -43,29 +43,29 @@ namespace TinyRenderer {
 } // TinyRenderer
 
 #ifdef _DEBUG
-// ÉúÃüÖÜÆÚ¹ÜÀíºê×é
-    #define DEBUG_MEM_STARTUP() DebugMemoryManager::instance().startUp();
+// ç”Ÿå‘½å‘¨æœŸç®¡ç†å®ç»„
+    #define DEBUG_MEM_STARTUP() DebugMemoryManager::instance().startup();
     #define DEBUG_MEM_SHUTDOWN() DebugMemoryManager::instance().shutDown();
 
-// ÄÚ´æ·ÖÅä×·×Ùºê×é
+// å†…å­˜åˆ†é…è¿½è¸ªå®ç»„
     #define DEBUG_MEM_ALLOCATE_BLOCK(size, block_addr, file, line) DebugMemoryManager::instance().on_alloc_block(size, block_addr, std::move(file), line);
     #define DEBUG_MEM_DEALLOCATE_BLOCK(size,ptr) DebugMemoryManager::instance().on_dealloc_block(size, ptr);
 
-    #define DEBUG_MEM_ALLOCATE_NEW_PAGE(size, page_ptr, block_num) DebugMemoryManager::instance().on_allocate_newPage(page_ptr, size, block_num);
+    //#define DEBUG_MEM_ALLOCATE_NEW_PAGE(size, page_ptr, block_num) DebugMemoryManager::instance().on_allocate_newPage(page_ptr, size, block_num);
     //#define DEBUG_MEM_DEALLOCATE_NEW_PAGE(size, page_ptr) DebugMemoryManager::instance().on_deallocate_page(size, page_ptr);
 
-    #define DEBUG_MEM_ALLOCATOR_STARTUP(size, min_block_num, max_block_num) DebugMemoryManager::instance().on_allocator_startUp(size, min_block_num, max_block_num);
+    //#define DEBUG_MEM_ALLOCATOR_STARTUP(size, min_block_num, max_block_num) DebugMemoryManager::instance().on_allocator_startUp(size, min_block_num, max_block_num);
 
     // #define DEBUG_MEM_ADJUST_METRIC(block_size, current_occupancy, longterm_factor, \
     //     longterm_threshold, shortterm_factor, shortterm_threshold, current_blockNum_perPage) \
     //     DebugMemoryManager::instance().on_adjust_metric(block_size, current_occupancy, \
     //     longterm_factor, longterm_threshold, shortterm_factor, shortterm_threshold, current_blockNum_perPage);
 #else
-    // ReleaseÄ£Ê½¿Õ¶¨Òå
-    #define DEBUG_MEM_STARTUP(...)              // ÎŞ²ÎÊıºêÖ±½Ó¿Õ¶¨Òå
+    // Releaseæ¨¡å¼ç©ºå®šä¹‰
+    #define DEBUG_MEM_STARTUP(...)              // æ— å‚æ•°å®ç›´æ¥ç©ºå®šä¹‰
     #define DEBUG_MEM_SHUTDOWN(...)
 
-    #define DEBUG_MEM_ALLOCATE_BLOCK(...)  // ´ø²Îºê±£Áô²ÎÊıÁĞ±í
+    #define DEBUG_MEM_ALLOCATE_BLOCK(...)  // å¸¦å‚å®ä¿ç•™å‚æ•°åˆ—è¡¨
     #define DEBUG_MEM_DEALLOCATE_BLOCK(...)
 
     #define DEBUG_MEM_ALLOCATE_NEW_PAGE(...)

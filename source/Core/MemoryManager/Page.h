@@ -1,4 +1,4 @@
-//
+ï»¿//
 // Created by Administrator on 25-4-16.
 //
 #pragma once
@@ -24,8 +24,8 @@ namespace TinyRenderer {
         Allocator* owner_;
     private:
         static inline constexpr uint8_t END_MARKER = 0xff;
-        SpinLock page_spinlock_; // ²Ù×÷freelist_Ê±(·ÖÅä/ÊÍ·ÅÄÚ´æ)£¬ĞèÒªÉÏËø
-        Block* user_address_; // ÄÚ´æÉêÇëÊ±·ÖÅäµÄµØÖ·
+        SpinLock page_spinlock_; // æ“ä½œfreelist_æ—¶(åˆ†é…/é‡Šæ”¾å†…å­˜)ï¼Œéœ€è¦ä¸Šé”
+        Block* user_address_; // å†…å­˜ç”³è¯·æ—¶åˆ†é…çš„åœ°å€
 
 
     public:
@@ -34,11 +34,11 @@ namespace TinyRenderer {
         static Page* allocate_newPage(int block_size, int block_num, Allocator* owner_, int alignment = DEFAULT_ALIGNMENT);
 
         bool allocate_block(void*& res);
-        bool try_deallocate_block(Block* block); // Ö±½Ó»ØÊÕ¿é
-        // ÅĞ¶ÏblockµØÖ·ÊÇ·ñÊôÓÚÕâ¸öÒ³
+        bool try_deallocate_block(Block* block); // ç›´æ¥å›æ”¶å—
+        // åˆ¤æ–­blockåœ°å€æ˜¯å¦å±äºè¿™ä¸ªé¡µ
         inline bool is_belongTo(Block* block) {
             ASSERT(block != nullptr);
-            //1.ÅĞ¶ÏblockÊÇ·ñÊôÓÚµ±Ç°page
+            //1.åˆ¤æ–­blockæ˜¯å¦å±äºå½“å‰page
             std::uintptr_t block_address = reinterpret_cast<uintptr_t>(block);
             std::uintptr_t user_address = reinterpret_cast<uintptr_t>(this->user_address_);
             if (block_address >= user_address && block_address <= user_address + block_size_ * total_block_num_ - 1) {
@@ -47,13 +47,13 @@ namespace TinyRenderer {
             return false;
         }
 
-        // ÅĞ¶ÏÊÇ·ñÓĞÊ£Óà¿é
+        // åˆ¤æ–­æ˜¯å¦æœ‰å‰©ä½™å—
         inline bool is_block_available() {
             return current_block_num_ > 0;
         }
 
     private:
-        static void link_freelist(Block* user_address, int block_size, int block_num); // Ìá¹©Ê×µØÖ·£¬Ã¿¸ö¿éµÄ´óĞ¡ºÍÊıÁ¿£¬Á¬½ÓÃ¿¸ö¿é
+        static void link_freelist(Block* user_address, int block_size, int block_num); // æä¾›é¦–åœ°å€ï¼Œæ¯ä¸ªå—çš„å¤§å°å’Œæ•°é‡ï¼Œè¿æ¥æ¯ä¸ªå—
     };
 
 } // TinyRenderer

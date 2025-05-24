@@ -1,17 +1,15 @@
-#include "example.h"
-#include "Platform/FileServer/FileServer.h"
-#include "Platform/Path.h"
+ï»¿#include "example.h"
 #include "Function/Message/Message.h"
 #include <iostream>
-#include "Function/Event/Delegate.h"
+#include "Core/Event/Delegate.h"
 #include "glm/glm.hpp"
 #include "Function/CommonType/json.h"
 #include <fstream>
 #include "Function/StopWatch/StopWatchManager.h"
-#include "Core/ResourceManager/ResourceManager.h"
 #include "Core/MemoryManager/MemoryManager.h"
 #include "Core/ThreadPool/ThreadPool.h"
 #include "Function/Counter/CounterManager.h"
+#include "Function/Framework/Component/Component.h"
 
 
 using namespace TinyRenderer;
@@ -33,17 +31,17 @@ class A
 public:
 	char C_Method()
 	{
-		cout << "ÕâÊÇ¸ö³ÉÔ±º¯Êý" << endl;
+		cout << "????????????" << endl;
 		return 'A';
 	}
 	static void S_Method()
 	{
-		cout << "ÕâÊÇ¸ö¾²Ì¬º¯Êý" << endl;
+		cout << "????????????" << endl;
 	}
 
 	virtual int V_Method(char b)
 	{
-		cout << "ÕâÊÇ¸öAµÄÐéº¯Êý" << endl;
+		cout << "?????A???éº¯??" << endl;
 		return 0;
 	}
 };
@@ -53,7 +51,7 @@ class B : public A
 public:
 	int V_Method(char b) override
 	{
-		cout << "ÕâÊÇ¸öBµÄÐéº¯Êý" << endl;
+		cout << "?????B???éº¯??" << endl;
 		return 0;
 	}
 };
@@ -61,20 +59,20 @@ public:
 void delegate_test()
 {
 	//delegate_test();
-	// Ê¹ÓÃÎ¯ÍÐÀàÐÍµ÷ÓÃÈ«¾Öº¯Êý
+	// ???????????????????
 	Delegate<int(int, int)> d1 = Delegate<int(int, int)>::bind(func);
 	d1(1, 5);
-	// µ÷ÓÃ¾²Ì¬º¯Êý
+	// ??????????
 	Delegate<float(float)> d2 = Delegate<float(float)>::bind(s_func);
 	d2(1.2);
-	// µ÷ÓÃlambda±í´ïÊ½
+	// ????lambda????
 	int i_c = 5;
 	Delegate<void(int)> d3 = Delegate<void(int)>::bind([i_c](int a) {
 		cout << a + i_c << endl;
 		});
 	d3(100);
 
-	// µ÷ÓÃ³ÉÔ±º¯Êý
+	// ???Ã³??????
 	std::shared_ptr<A> a = make_shared<A>();
 	auto d4 = Delegate<char()>::bind<A>(a, &A::C_Method);
 	cout << d4() << endl;
@@ -84,65 +82,25 @@ void delegate_test()
 
 }
 
-void json_test()
-{
-	// ´´½¨ JSON ¶ÔÏó
-	json j = {
-		{"name", "John Doe"},
-		{"age", 30},
-		{"is_student", false},
-		{"courses", {"Math", "Science"}}
-	};
-
-	// ²âÊÔÇ¶Ì× JSON ¶ÔÏó
-	json j2;
-	j2["name"] = "j2";
-	j2["parent"] = "j";
-
-	json j3;
-	j3["name"] = "j3";
-	j3["parent"] = "j2";
-
-	j2["cihld"] = j3;
-	j["child"] = j2;
-
-	j["age"] = 31;  // ÐÞ¸ÄÄêÁä
-
-	// Êä³öÕû¸ö JSON ¶ÔÏó
-	cout << j.dump(4) << endl;
-
-	// ¼ÙÉèÒÑÍ¨¹ýnlohmann/json¿âÉú³ÉJSON×Ö·û´®
-	std::string json_str = j.dump(4); // Éú³É¸ñÊ½»¯µÄJSON×Ö·û´®
-
-	// ±£´æµ½ÎÄ¼þ
-	Path p = FileServer::get_rootPath() / "example" / "data.json";
-	std::ofstream out_file(p.toString(), ios::out);
-	if (out_file.is_open()) {
-		out_file << json_str;
-		out_file.close();
-		std::cout << "JSONÎÄ¼þÒÑ±£´æ" << std::endl;
-	}
-	else {
-		std::cerr << "ÎÞ·¨´ò¿ªÎÄ¼þ" << std::endl;
-	}
-}
-
 void threadpool_test() {
 	ThreadPool::instance().startUp(2);
-	TaskResult<void> res1 = ThreadPool::instance().enqueue([]{
-		cout << ("ÕýÔÚÖ´ÐÐÈÎÎñ1") << endl;
-	}, TaskPriority::Medium);
-	TaskResult<void> res2 = ThreadPool::instance().enqueue([]{
-		cout << ("ÕýÔÚÖ´ÐÐÈÎÎñ2")<<endl;
-	}, TaskPriority::Medium);
-	TaskResult<void> res3 = ThreadPool::instance().enqueue([]{
-		cout << ("ÕýÔÚÖ´ÐÐÈÎÎñ3")<<endl;
-	}, TaskPriority::Medium);
-	TaskResult<void> res4 = ThreadPool::instance().enqueue([]{
-		cout << ("ÕýÔÚÖ´ÐÐÈÎÎñ4") << endl;
-	}, TaskPriority::Low);
+	TaskResult<void> res1 = ThreadPool::instance().enqueue(
+            TaskPriority::Medium,
+            []{ cout << ("???????????1") << endl;});
 
-	ThreadPool::instance().enqueue([]{ThreadPool::instance().adjust_workers();}, TaskPriority::High);
+	TaskResult<void> res2 = ThreadPool::instance().enqueue(
+            TaskPriority::Medium,
+            []{ cout << ("???????????2")<<endl; });
+
+	TaskResult<void> res3 = ThreadPool::instance().enqueue(
+            TaskPriority::Medium,
+            []{ cout << ("???????????3")<<endl; });
+
+	TaskResult<void> res4 = ThreadPool::instance().enqueue(
+            TaskPriority::Low,
+            []{ cout << ("???????????4") << endl; });
+
+	ThreadPool::instance().enqueue(TaskPriority::High, []{ThreadPool::instance().adjust_workers();});
 
 	ThreadPool::instance().shutDown();
 }
@@ -153,10 +111,10 @@ void threadpool_test() {
 #include <iostream>
 
 void SimpleMemoryTest() {
-    // ÅäÖÃ²ÎÊý
-    constexpr bool use_custom_alloc = true;  // ÇÐ»»·ÖÅäÆ÷ÀàÐÍ
-    constexpr int test_cycles = 1000000;     // ×Ü²âÊÔ´ÎÊý£¨¸ù¾ÝÐÔÄÜµ÷Õû£©
-    constexpr int max_block_size = 256;      // ×î´ó·ÖÅä¿é´óÐ¡[3,5](@ref)
+    // ???Ã²???
+    constexpr bool use_custom_alloc = false;  // ?Ð»???????????
+    constexpr int test_cycles = 10000;     // ???????????????????????
+    constexpr int max_block_size = 256;      // ????????Ð¡[3,5](@ref)
 
     struct MemBlock {
         void* ptr;
@@ -166,21 +124,14 @@ void SimpleMemoryTest() {
 
     std::mt19937 gen(std::random_device{}());
     std::uniform_int_distribution<size_t> size_dist(1, max_block_size);
-    std::uniform_int_distribution<int> alloc_count_dist(1, 20);  // Ã¿´Î·ÖÅä1-5´Î[2](@ref)
-    std::uniform_int_distribution<int> free_count_dist(0, 3);   // Ã¿´ÎÊÍ·Å0-3´Î
-    std::bernoulli_distribution action_dist(0.7);               // 70%¸ÅÂÊÖ´ÐÐ²Ù×÷
+    std::uniform_int_distribution<int> alloc_count_dist(1, 20);  // ??Î·???1-5??[2](@ref)
+    std::uniform_int_distribution<int> free_count_dist(0, 3);   // ??????0-3??
+    std::bernoulli_distribution action_dist(0.7);               // 70%??????Ð²???
     std::vector<MemBlock> blocks;
 
     for (int i = 0; i < test_cycles; ++i) {
-        // ×Ô¶¨Òå·ÖÅäÆ÷µÄÄÚ´æÕûÀíÖÜÆÚ
-        if (use_custom_alloc) {
-        	StopWatch_Start(tick_time);
-            MemoryManager::instance().tick();  // Ä£ÄâÄÚ´æÕûÀí
-        	StopWatch_Pause(tick_time);
-        }
-
         if (action_dist(gen)) {
-            // ·ÖÅä½×¶Î£ºÖ´ÐÐ1-5´ÎËæ»ú·ÖÅä
+            // ?????Î£????1-5?????????
             int alloc_times = alloc_count_dist(gen);
             for (int j = 0; j < alloc_times; ++j) {
                 size_t size = size_dist(gen);
@@ -193,7 +144,7 @@ void SimpleMemoryTest() {
                 }
             }
         } else {
-            // ÊÍ·Å½×¶Î£ºÖ´ÐÐ0-3´ÎËæ»úÊÍ·Å
+            // ????Î£????0-3????????
             int free_times = std::min(free_count_dist(gen),
                                      static_cast<int>(blocks.size()));
             for (int j = 0; j < free_times; ++j) {
@@ -208,7 +159,7 @@ void SimpleMemoryTest() {
         }
     }
 
-    // ÇåÀí²ÐÁôÄÚ´æ£¨°²È«´ëÊ©£©
+    // ?????????æ£¨????????
     for (auto& block : blocks) {
         if (block.is_custom) {
             deleteElement(static_cast<char*>(block.ptr));
@@ -217,13 +168,16 @@ void SimpleMemoryTest() {
         }
     }
 
-    std::cout << "=== Ñ¹Á¦²âÊÔ½á¹û ===\n"
-              << "×Üµü´ú´ÎÊý: " << test_cycles << "\n"
-              << "·åÖµÄÚ´æ¿éÊý: " << blocks.capacity() << "\n"
-              << "×îÖÕÐ¹Â©¿éÊý: " << blocks.size() << "\n";
+    std::cout << "=== ????????? ===\n"
+              << "?????????: " << test_cycles << "\n"
+              << "?????????: " << blocks.capacity() << "\n"
+              << "????Ð¹?????: " << blocks.size() << "\n";
 }
 
 void mem_time_test() {
+	MemoryManager::instance().startUp();
+	ThreadPool::instance().startUp();
+
 	CounterManager::instance().startUp();
 	StopWatchManager::instance().startUp();
 
@@ -232,29 +186,33 @@ void mem_time_test() {
 	SimpleMemoryTest();
 	sw.Pause();
 	std::cout << "mem_test cost: " << sw.microseconds() << " microseconds" << std::endl;
-	StopWatch_Microseconds(tick_time);
-	StopWatch_Microseconds(alloc_time);
-	StopWatch_Microseconds(deallocate_time);
 
 	StopWatchManager::instance().shutDown();
 	CounterManager::instance().shutDown();
-}
-
-void asyncIO_test() {
-	auto res = ResourceManager::instance().async_load<json>(FileServer::get_rootPath()/"logs"/"DebugMemoryLog"/"MemoryManager_log.json");
-	while (!res.is_done()) {
-		std::cout << "µÈ´ýÈÎÎñÍê³É¡£¡£¡£"<<endl;
-	}
-	auto js = res.get();
-	cout << js.dump(4) << endl;
-
-}
-
-void Example::Main() {
-	MemoryManager::instance().startUp();
-	ThreadPool::instance().startUp();
 
 
 	ThreadPool::instance().shutDown();
 	MemoryManager::instance().shutDown();
+}
+
+// void asyncIO_test() {
+// 	auto res = ResourceManager::instance().async_load<json>(FileServer::get_rootPath()/"logs"/"DebugMemoryLog"/"MemoryManager_log.json");
+// 	while (!res.is_done()) {
+// 		std::cout << "?????????É¡?????"<<endl;
+// 	}
+// 	auto js = res.get();
+// 	cout << js.dump(4) << endl;
+//
+// }
+
+
+#include "Function/Framework/Object/Object.h"
+using namespace TinyRenderer;;
+void Example::Main() {
+	rttr::type t = rttr::type::get<Component>();
+	Object obj;
+	Component* com = new Component();
+	if (t.is_derived_from<Object>()) {
+		std::cout << "å¯¹" << std::endl;
+	}
 }

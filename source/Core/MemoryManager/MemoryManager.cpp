@@ -3,6 +3,7 @@
 //
 
 #include "MemoryManager.h"
+#include "Core/DebugMemoryManager/DebugMemoryManager.h"
 
 #include <cmath>
 #include <memory>
@@ -22,22 +23,25 @@ namespace TinyRenderer {
     }
 
 
-    void MemoryManager::startUp(int min_blockNum_perPage) {
+    void MemoryManager::startUp() {
         MemoryManager& memoryManager = MemoryManager::instance();
-        // ´Ó2µÄ0´Î·½Ò»Ö±µ½2µÄMAX_TWOPOWERI´Î·½
+        // ä»2çš„0æ¬¡æ–¹ä¸€ç›´åˆ°2çš„MAX_TWOPOWERIæ¬¡æ–¹
         size_t block_size = 1;
         for (int i = 0; i <= MAX_TWOPOWERI; i++) {
             allocators_[i] = std::make_unique<Allocator>();
-            allocators_[i]->startUp(block_size, MIN_BLOCKNUM_PERPAGE, (MAX_TWOPOWERI - i + 1) * 2); // Ã¿¸öallocator¸ù¾İ·ÖÅä¿éµÄ´óĞ¡£¬ÏŞÖÆËüµÄÃ¿Ò³×î´ó¿éÊı
+            allocators_[i]->startUp(block_size, (MAX_TWOPOWERI - i + 1) * 2); // æ¯ä¸ªallocatoræ ¹æ®åˆ†é…å—çš„å¤§å°ï¼Œé™åˆ¶å®ƒçš„æ¯é¡µæœ€å¤§å—æ•°
             block_size <<= 1;
         }
 
-        // ³õÊ¼»¯Æ½»¬ÏµÊıºÍÆ½¾ùÖµ
-        ewma_occupancy_.smoothing_factor_=0.7f;
-        ewma_occupancy_.average_occupancy_=0.0f;
+        // // åˆå§‹åŒ–å¹³æ»‘ç³»æ•°å’Œå¹³å‡å€¼
+        // ewma_occupancy_.smoothing_factor_=0.7f;
+        // ewma_occupancy_.average_occupancy_=0.0f;
 
-        occupancy_level_ = Occupancy_level::low; // Ò»¿ªÊ¼ÏÈÉèÖÃµÍ¼¶±ğµÄÄÚ´æÕ¼ÓÃÂÊ
+        occupancy_level_ = Occupancy_level::low; // ä¸€å¼€å§‹å…ˆè®¾ç½®ä½çº§åˆ«çš„å†…å­˜å ç”¨ç‡
+
+        DEBUG_MEM_STARTUP();
     }
+
 
     void MemoryManager::shutDown() {
         MemoryManager& memoryManager = MemoryManager::instance();
@@ -51,10 +55,10 @@ namespace TinyRenderer {
 
     void* MemoryManager::allocate(size_t size) {
         ASSERT(size>0)
-        StopWatch_Start(alloc_time);
+        // StopWatch_Start(alloc_time);
 
         size_t twopoweri = MAX_TWOPOWERI + 1;
-        // ÕÒµ½´óÓÚsizeµÄµÚÒ»¸öallocator
+        // æ‰¾åˆ°å¤§äºsizeçš„ç¬¬ä¸€ä¸ªallocator
         for (int i=0;i<=MAX_TWOPOWERI;i++) {
             if (allocators_[i]->block_size_<=size) {
                 twopoweri = i;
@@ -64,28 +68,28 @@ namespace TinyRenderer {
         }
 
         void* res = nullptr;
-        // ³¬³öÄÚ´æ³Ø¹ÜÀí·¶Î§£¬Ö±½ÓÊ¹ÓÃmalloc
+        // è¶…å‡ºå†…å­˜æ± ç®¡ç†èŒƒå›´ï¼Œç›´æ¥ä½¿ç”¨malloc
         if (twopoweri > MAX_TWOPOWERI) {
             res = malloc(twopoweri);
         }
         else {
             res = allocators_[twopoweri]->allocate();
         }
-        StopWatch_Pause(alloc_time);
+        // StopWatch_Pause(alloc_time);
         return res;
     }
 
     void MemoryManager::deallocate(void* ptr) {
         StopWatch_Start(deallocate_time);
-        // 1.ÕÒµ½Ğ¡ÓÚptrµÄ×î´óÖµ
+        // 1.æ‰¾åˆ°å°äºptrçš„æœ€å¤§å€¼
         auto it = pages_.upper_bound(reinterpret_cast<Page*>(ptr));
         if (it != pages_.begin()) {
             --it;
             Page* page = *it;
             bool isRecycle_page = false;
-            // 2.Èç¹ûtry_dellocate·µ»Øtrue´ú±í»ØÊÕ³É¹¦
+            // 2.å¦‚æœtry_dellocateè¿”å›trueä»£è¡¨å›æ”¶æˆåŠŸ
             if (page->owner_->try_dellocate(page, reinterpret_cast<Block*>(ptr), isRecycle_page)) {
-                // Èç¹ûÉ¾³ıÁËµ±Ç°µÄpageÔòÈ¥³ıpagesµÄpageÊı¾İ
+                // å¦‚æœåˆ é™¤äº†å½“å‰çš„pageåˆ™å»é™¤pagesçš„pageæ•°æ®
                 if (isRecycle_page) {
                     pages_.erase(it);
                 }
@@ -93,68 +97,68 @@ namespace TinyRenderer {
                 return;
             }
         }
-        // Èç¹ûµ½ÕâÃ»ÓĞ»ØÊÕÔòµ÷ÓÃfree
+        // å¦‚æœåˆ°è¿™æ²¡æœ‰å›æ”¶åˆ™è°ƒç”¨free
         free(ptr);
         StopWatch_Pause(deallocate_time);
     }
 
-    void MemoryManager::tick() {
-        // Ã¿refresh_interval_´ÎÑ­»·Ò»´Î
-        static int frame_counter = 0;
-        frame_counter++;
+    // void MemoryManager::tick() {
+    //     // æ¯refresh_interval_æ¬¡å¾ªç¯ä¸€æ¬¡
+    //     static int frame_counter = 0;
+    //     frame_counter++;
+    //
+    //     for (int i=0;i<=MAX_TWOPOWERI;i++) {
+    //         allocators_[i]->tick();
+    //     }
+    //     // å¦‚æœå¸§è®¡æ•°å™¨ä¸º0ï¼Œè§¦å‘åˆ·æ–°æŒ‡æ ‡é€»è¾‘
+    //     if (frame_counter >= refresh_interval_) {
+    //         refreshMetrics();
+    //         for (int i=0;i<=MAX_TWOPOWERI;i++) {
+    //             allocators_[i]->refreshMetrics(occupancy_level_);
+    //         }
+    //     }
+    //     frame_counter %= refresh_interval_;
+    // }
 
-        for (int i=0;i<=MAX_TWOPOWERI;i++) {
-            allocators_[i]->tick();
-        }
-        // Èç¹ûÖ¡¼ÆÊıÆ÷Îª0£¬´¥·¢Ë¢ĞÂÖ¸±êÂß¼­
-        if (frame_counter >= refresh_interval_) {
-            refreshMetrics();
-            for (int i=0;i<=MAX_TWOPOWERI;i++) {
-                allocators_[i]->refreshMetrics(occupancy_level_);
-            }
-        }
-        frame_counter %= refresh_interval_;
-    }
-
-    void MemoryManager::refreshMetrics() {
-        // »ñÈ¡ÏµÍ³ĞéÄâÄÚ´æÕ¼ÓÃÂÊ
-        PROCESS_MEMORY_COUNTERS pmc;
-        if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
-            SIZE_T processVirtualUsed = pmc.PagefileUsage;
-
-            // »ñÈ¡ÏµÍ³×ÜĞéÄâÄÚ´æ
-            MEMORYSTATUSEX memStatus;
-            memStatus.dwLength = sizeof(memStatus);
-            if (GlobalMemoryStatusEx(&memStatus)) {
-                DWORDLONG totalVirtual = memStatus.ullTotalPageFile;
-
-                // ¼ÆËã²¢Êä³ö±ÈÖµ
-                double ratio = static_cast<double>(processVirtualUsed) / totalVirtual;
-                ratio *= 100;
-                // ¸ù¾İ±ÈÖµ¸ü¸ÄÕ¼ÓÃÂÊ
-                if (ratio < (double)Occupancy_level::medium) {
-                    occupancy_level_ = Occupancy_level::low;
-                    refresh_interval_ = 15;
-                }
-                else if (ratio > (double)Occupancy_level::high) {
-                    occupancy_level_ = Occupancy_level::high;
-                    refresh_interval_ = 10;
-                }
-                else {
-                    occupancy_level_ = Occupancy_level::medium;
-                    refresh_interval_ = 5;
-                }
-            }
-        }
-        else {
-            LOG_ERROR("system Memory occupancy calculate occur error!");
-        }
-
-
-        for (int i=0;i<=MAX_TWOPOWERI;i++) {
-            allocators_[i]->refreshMetrics(occupancy_level_);
-        }
-    }
+    // void MemoryManager::refreshMetrics() {
+    //     // è·å–ç³»ç»Ÿè™šæ‹Ÿå†…å­˜å ç”¨ç‡
+    //     PROCESS_MEMORY_COUNTERS pmc;
+    //     if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+    //         SIZE_T processVirtualUsed = pmc.PagefileUsage;
+    //
+    //         // è·å–ç³»ç»Ÿæ€»è™šæ‹Ÿå†…å­˜
+    //         MEMORYSTATUSEX memStatus;
+    //         memStatus.dwLength = sizeof(memStatus);
+    //         if (GlobalMemoryStatusEx(&memStatus)) {
+    //             DWORDLONG totalVirtual = memStatus.ullTotalPageFile;
+    //
+    //             // è®¡ç®—å¹¶è¾“å‡ºæ¯”å€¼
+    //             double ratio = static_cast<double>(processVirtualUsed) / totalVirtual;
+    //             ratio *= 100;
+    //             // æ ¹æ®æ¯”å€¼æ›´æ”¹å ç”¨ç‡
+    //             if (ratio < (double)Occupancy_level::medium) {
+    //                 occupancy_level_ = Occupancy_level::low;
+    //                 refresh_interval_ = 15;
+    //             }
+    //             else if (ratio > (double)Occupancy_level::high) {
+    //                 occupancy_level_ = Occupancy_level::high;
+    //                 refresh_interval_ = 10;
+    //             }
+    //             else {
+    //                 occupancy_level_ = Occupancy_level::medium;
+    //                 refresh_interval_ = 5;
+    //             }
+    //         }
+    //     }
+    //     else {
+    //         LOG_ERROR("system Memory occupancy calculate occur error!");
+    //     }
+    //
+    //
+    //     for (int i=0;i<=MAX_TWOPOWERI;i++) {
+    //         allocators_[i]->refreshMetrics(occupancy_level_);
+    //     }
+    // }
 
     void MemoryManager::register_newPage(Page* new_page) {
         pages_.insert(new_page);

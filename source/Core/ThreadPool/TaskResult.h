@@ -19,7 +19,7 @@ namespace TinyRenderer {
             }
             return future_.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
         }
-        // ×èÈûµÄ»ñÈ¡·µ»ØÖµ
+        // é˜»å¡çš„è·å–è¿”å›å€¼
         T get() {
             if (!future_.valid()) {
                 LOG_ERROR("the result future is on_state");
@@ -27,11 +27,11 @@ namespace TinyRenderer {
             return future_.get();
         }
     public:
-        // future²»¿É¿½±´
-        TaskResult(const TaskResult&) = delete;            // ½ûÓÃ¿½±´¹¹Ôì
-        TaskResult& operator=(const TaskResult&) = delete; // ½ûÓÃ¿½±´¸³Öµ
+        // futureä¸å¯æ‹·è´
+        TaskResult(const TaskResult&) = delete;            // ç¦ç”¨æ‹·è´æ„é€ 
+        TaskResult& operator=(const TaskResult&) = delete; // ç¦ç”¨æ‹·è´èµ‹å€¼
     private:
-        // ¿ÉÒÔÓÃÀ´ÅĞ¶ÏÈÎÎñÊÇ·ñÍê³ÉÒÔ¼°·µ»Ø½á¹û
+        // å¯ä»¥ç”¨æ¥åˆ¤æ–­ä»»åŠ¡æ˜¯å¦å®Œæˆä»¥åŠè¿”å›ç»“æœ
         std::future<T> future_;
     };
 }

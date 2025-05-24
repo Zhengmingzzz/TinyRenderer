@@ -5,54 +5,42 @@
 #include "DebugMemoryManager.h"
 #include <cmath>
 #include "Core/MemoryManager/MemoryManager.h"
-#include "Core/StreamSystem/StreamSystem.hpp"
-#include "Platform/FileServer/FileServer.h"
 
 namespace TinyRenderer {
     DebugMemoryManager& DebugMemoryManager::instance() {
         static DebugMemoryManager* instance = nullptr;
         if (instance == nullptr) {
             instance = new DebugMemoryManager();
-            instance->startUp();
         }
         return *instance;
     }
 
-    void DebugMemoryManager::startUp() {
-        // 记录开始时间
-        start_time_ = std::chrono::system_clock::now();
-
-        MemoryManager& instance = MemoryManager::instance();
-        // 初始化debug_allocator_
-        debug_allocators_.resize(instance.MAX_TWOPOWERI+1);
+    void DebugMemoryManager::startup() {
+        debug_allocators_.resize(MemoryManager::instance().MAX_TWOPOWERI+1);
     }
 
-    void DebugMemoryManager::on_allocator_startUp(int block_size, int min_block_num_perPage, int max_block_num_perPage) {
-        int allocator_idx = std::log2(block_size);
-        debug_allocators_[allocator_idx].on_startUp(block_size, min_block_num_perPage, max_block_num_perPage);
-    }
 
     void DebugMemoryManager::shutDown() {
-        // 记录结束时间
-        end_time_ = std::chrono::system_clock::now();
-        // 计算总的时间间隔
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_ - start_time_);
-        survival_time_ = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
-
+        // // 璁板綍缁撴潫鏃堕棿
+        // end_time_ = std::chrono::system_clock::now();
+        // // 璁＄畻鎬荤殑鏃堕棿闂撮殧
+        // auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_ - start_time_);
+        // survival_time_ = std::chrono::duration_cast<std::chrono::seconds>(duration).count();
+        //
         for (int i = 0; i < debug_allocators_.size(); i++) {
             debug_allocators_[i].on_shutdown();
         }
 
-        ordered_json mem_log_info = log_mem_info();
-        JsonStream json_stream;
-        Path log_page = FileServer::get_rootPath() / "logs" / "DebugMemoryLog" / "MemoryManager_log.json";
-        json_stream.save(std::move(log_page), mem_log_info);
+        // ordered_json mem_log_info = log_mem_info();
+        // JsonStream json_stream;
+        // Path log_page = FileServer::get_rootPath() / "logs" / "DebugMemoryLog" / "MemoryManager_log.json";
+        // json_stream.save(std::move(log_page), mem_log_info);
     }
 
     void DebugMemoryManager::on_alloc_block(int block_size,void* block, std::string&& file, size_t line) {
         int allocator_idx = std::log2(block_size);
         debug_allocators_[allocator_idx].on_allocate_block(block, std::move(file), line);
-        total_alloc_cnt_++;
+        // total_alloc_cnt_++;
     }
 
     void DebugMemoryManager::on_dealloc_block(int block_size, void* block) {
@@ -60,21 +48,21 @@ namespace TinyRenderer {
         debug_allocators_[allocator_idx].on_deallocate_block(block);
     }
 
-    void DebugMemoryManager::on_allocate_newPage(void* page, int block_size, int block_num) {
-        int allocator_idx = std::log2(block_size);
-        debug_allocators_[allocator_idx].on_allocate_newPage(page, block_size, block_num);
-    }
+    // void DebugMemoryManager::on_allocate_newPage(void* page, int block_size, int block_num) {
+    //     int allocator_idx = std::log2(block_size);
+    //     debug_allocators_[allocator_idx].on_allocate_newPage(page, block_size, block_num);
+    // }
 
-    ordered_json DebugMemoryManager::log_mem_info() {
-        ordered_json res;
-        res["File"] = "Debug Memory Manager";
-        res["allocate count"] = total_alloc_cnt_;
-        res["survival time(seconds)"] = survival_time_;
-        for (int i = 0; i < debug_allocators_.size(); i++) {
-            std::ostringstream oss;
-            oss << "Allocator " << i;
-            res[oss.str()] = debug_allocators_[i].log_allocator_info();
-        }
-        return res;
-    }
+    // ordered_json DebugMemoryManager::log_mem_info() {
+    //     ordered_json res;
+    //     res["File"] = "Debug Memory Manager";
+    //     res["allocate count"] = total_alloc_cnt_;
+    //     res["survival time(seconds)"] = survival_time_;
+    //     for (int i = 0; i < debug_allocators_.size(); i++) {
+    //         std::ostringstream oss;
+    //         oss << "Allocator " << i;
+    //         res[oss.str()] = debug_allocators_[i].log_allocator_info();
+    //     }
+    //     return res;
+    // }
 } // TinyRenderer
