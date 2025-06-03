@@ -4,7 +4,7 @@
 
 #include "to_json.h"
 #include <iostream>
-#include "Function/Framework/Object/Object.h"
+#include "Function/Framework/Object/SerializableObject.h"
 #include "Resource/AssetManager/AssetManager.h"
 
 namespace TinyRenderer {
@@ -72,10 +72,13 @@ namespace TinyRenderer {
                 json[name] = guid.to_string();
                 return true;
             }
-            // TODO:先判断是否为Resource*类型，是则走这条分支。反之不处理，由write_variant之后处理
+            // TODO: 处理Resource类型
+            // else if (t is Resource* type)
+            // save var.GUID
+
             // 遇到object*类型直接保存为GUID，并且将它保存到另一个GUID.json文件
-            else if(t.is_derived_from(rttr::type::get<Object>()) && t.is_pointer()) {
-                Object* obj = var.get_value<Object*>();
+            else if(t.is_derived_from(rttr::type::get<SerializableObject>()) && t.is_pointer()) {
+                SerializableObject* obj = var.get_value<SerializableObject*>();
                 if (obj != nullptr) {
                     json[name] = obj->get_guid().to_string();
 
@@ -196,6 +199,7 @@ namespace TinyRenderer {
             rttr::instance raw_obj = obj.get_type().get_raw_type().is_wrapper() ? obj.get_wrapped_instance() : obj;
             // 获取运行时对应的类型属性
             auto prop_list = raw_obj.get_derived_type().get_properties();
+            // 遍历所有属性，按照name : value对形式保存
             for (auto &prop: prop_list) {
                 // 判断是否需要进行序列化
                 if (!prop.get_metadata(PROPERTY_FLAG_SERIALIZE).to_bool())

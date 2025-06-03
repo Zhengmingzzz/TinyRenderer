@@ -10,6 +10,7 @@
 #include "Resource/GUID/GUID.h"
 
 namespace TinyRenderer {
+    class SerializableObject;
     class Object;
     class GUID;
 
@@ -20,7 +21,7 @@ namespace TinyRenderer {
 
     private:
         // 序列化时需要的参数，用于记录序列化的根对象和序列化了的对象
-        std::unordered_set<GUID> serialized_guids_;
+        std::unordered_set<GUID> serialized_objects_;
         Object* root_serialized_object_ = nullptr;
 
     public:
@@ -36,10 +37,10 @@ namespace TinyRenderer {
         Object* load(const GUID& guid);
         void load_by_path(const std::filesystem::path& file_path, rttr::instance obj);
 
-        bool save(Object* target_object_ptr);
+        bool save(SerializableObject* target_object_ptr);
         void save_by_path(const std::filesystem::path& file_path, rttr::instance obj);
 
-        bool save_to_meta(const std::filesystem::path& parent_dir, Object* target_object);
+        bool save_to_meta(const std::filesystem::path& parent_dir, SerializableObject* target_object);
 
         rttr::variant load_variant(const GUID& guid);
 

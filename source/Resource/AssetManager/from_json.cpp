@@ -218,39 +218,40 @@ namespace TinyRenderer {
 
                 // 根据属性名称在json中获取对应的值
                 auto& json_value = source_json[prop_name];
-                const type value_type = prop.get_type();
-                string type_string = value_type.get_name().to_string();
+                const type prop_type = prop.get_type();
+                string type_string = prop_type.get_name().to_string();
 
                 // 这个属性是否需要从GUID生成Object*实例
                 bool is_guidToObject = prop.get_metadata(PROPERTY_FLAG_GUIDTOOBJECT).to_bool();
                 // 处理数组类型
                 if(json_value.is_array()) {
                     variant var = prop.get_value(obj);
-                    if (value_type.is_sequential_container()) {
+                    if (prop_type.is_sequential_container()) {
                         auto view = var.create_sequential_view();
                         write_array_recursively(view, json_value, is_guidToObject);
                     }
-                    else if (value_type.is_associative_container()) {
+                    else if (prop_type.is_associative_container()) {
                         auto associative_view = var.create_associative_view();
                         write_associative_view_recursively(associative_view, json_value, is_guidToObject);
                     }
                     prop.set_value(obj, var);
                 }
                 // 特殊处理GUID
-                else if(value_type == rttr::type::get<GUID>()){
+                else if(prop_type == rttr::type::get<GUID>()){
                     string guid_str = json_value.get<string>();
                     GUID guid(guid_str);
                     prop.set_value(obj, guid);
                 }
                 // 处理object*类型 直接反序列化对应的GUID
-                else if (prop.get_type().is_derived_from(rttr::type::get<Object>()) && prop.get_type().is_pointer()) {
+                else if ((prop_type.is_derived_from(rttr::type::get<Object>()) && prop_type.is_pointer()) || prop_type == rttr::type::get<HierarchyNode*>()) {
                     if (!is_guidToObject)
                         continue;
                     GUID guid(json_value.get<string>());
+                    // TODO:这里需要判断Resource类型，遇到Resource时直接调用variant var = t.create(GUID)，让资源类型自己加载即可
+                    // TODO:还需额外判断Component*类型，因为Component为Object类型的指针，但是需要提前开辟空间
                     variant var = AssetManager::get_instance().load_variant(guid);
-                    if (var.convert(prop.get_type()))
+                    if (var.convert(prop_type))
                         prop.set_value(obj, var);
-
                 }
                 // 处理对象类型
                 else if(json_value.is_object()) {
@@ -260,8 +261,8 @@ namespace TinyRenderer {
                 }
                 // 处理基础类型
                 else{
-                    variant extracted_value = extract_basic_type(json_value, value_type, is_guidToObject);
-                    if(extracted_value.convert(value_type))
+                    variant extracted_value = extract_basic_type(json_value, prop_type, is_guidToObject);
+                    if(extracted_value.convert(prop_type))
                         prop.set_value(obj, extracted_value);
                 }
             }

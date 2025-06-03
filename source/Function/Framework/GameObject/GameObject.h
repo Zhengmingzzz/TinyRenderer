@@ -10,17 +10,17 @@
 #include "Function/Framework/Component/Component.h"
 #include "Function/Framework/LevelManager/LevelManager.h"
 #include "Function/Framework/Object/HierarchyNode.h"
-#include "Function/Framework/Object/Object.h"
+#include "Function/Framework/Object/SerializableObject.h"
 
 namespace TinyRenderer {
     class Level;
 
-    class GameObject : public HierarchyNode {
+    class GameObject : public HierarchyNode, public SerializableObject {
     public:
         std::list<GameObject*> children_list_;
 
     private:
-        HierarchyNode* parent_node_ = nullptr; // 有可能是GO，也有可能是Level
+        HierarchyNode* parent_node_ = nullptr; // 有可能是GO，也有可能是Level，表示上一层级的节点
 
         std::unordered_map<std::string, std::vector<Component*>> component_map_;
 
@@ -28,7 +28,7 @@ namespace TinyRenderer {
         // 默认属于
         static GameObject* create(const std::string& name = "default GO", GameObject* parent_ = nullptr ,const GUID& guid = GUID::allocate_guid());
         GameObject()  = default;
-        GameObject(const GUID& guid, const std::string& name) : HierarchyNode(guid, name) {
+        GameObject(const GUID& guid, const std::string& name) : SerializableObject(guid, name) {
         }
 
         template<class T>
@@ -106,7 +106,7 @@ namespace TinyRenderer {
 
 
         RTTR_REGISTRATION_FRIEND
-        RTTR_ENABLE(HierarchyNode)
+        RTTR_ENABLE(HierarchyNode, SerializableObject)
     };
 } // TinyRenderer
 

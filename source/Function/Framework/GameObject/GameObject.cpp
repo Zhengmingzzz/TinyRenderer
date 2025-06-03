@@ -68,7 +68,7 @@ namespace TinyRenderer {
 
         // 说明传入参数为Level类型，说明需要将G1设置为这个Level的根节点
         if (G2 == nullptr) {
-            LOG_ERROR("Failure: set_parent errer : not Hierarchy type " << this->get_guid().to_string() << " as " << new_parent->get_guid().to_string() << " child");
+            LOG_ERROR("Failure: set_parent errer : not Hierarchy type " << this->get_guid().to_string());
             return;
         }
 

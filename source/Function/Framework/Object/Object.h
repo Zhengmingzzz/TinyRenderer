@@ -29,19 +29,9 @@ rttr::registration::class_<className>(#className)
 
 
 namespace TinyRenderer {
+    // 万物的基类
     class Object {
     public:
-        const GUID& get_guid(){
-            return guid_;
-        }
-        void set_guid(const GUID& guid){
-            if (guid_.is_valid())
-                GUIDReference::get_instance().unregister_object(guid);
-            if (guid.is_valid())
-                GUIDReference::get_instance().register_object(guid, this);
-            guid_ = guid;
-        }
-
         std::string name_ = "default";
 
         bool get_active() {
@@ -51,31 +41,17 @@ namespace TinyRenderer {
             is_active_ = active;
         }
     private:
-        GUID guid_;
         bool is_active_ = true;
 
 
     public:
         Object() = default;
-        Object(const GUID& guid){
-            if(!guid.is_valid())
-                return;
-            guid_ = guid;
 
-            GUIDReference::get_instance().register_object(guid_, this);
-        }
-
-        Object(const GUID& guid, const std::string& name) {
-            if(guid.is_valid()) {
-                guid_ = guid;
-            }
+        Object(const std::string& name) {
             name_ = name;
-
         }
 
-        virtual ~Object(){
-            GUIDReference::get_instance().unregister_object(guid_);
-        }
+        virtual ~Object() = default;
 
     private:
 

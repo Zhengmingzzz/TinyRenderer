@@ -7,12 +7,13 @@
 #include <iostream>
 
 #include "Core/GUIDReference/GUIDReference.h"
-#include "Function/Framework/Object/Object.h"
+#include "Function/Framework/Object/SerializableObject.h"
 #include "Resource/GUID/GUID.h"
 
 
 #include "from_json.h"
 #include "to_json.h"
+#include "Function/Framework/Object/SerializableObject.h"
 #include "Function/Message/Message.h"
 
 
@@ -44,6 +45,11 @@ namespace TinyRenderer {
         if(!t.is_valid() && !t.is_derived_from<Object>())
             return nullptr;
 
+        // if (t.is_derived_from<Resource>()) {
+        //     // TODO:处理 Resource类型
+        //
+        // }
+
         // 构建__type__类型实例
         rttr::variant var = t.create();
         io::from_json(res_json, var);
@@ -56,7 +62,6 @@ namespace TinyRenderer {
 
         io::from_json(res_json, obj);
     }
-
 
     rttr::variant AssetManager::load_variant(const GUID& guid) {
         // 防止重复创建用一GUID对应的实例
@@ -74,7 +79,11 @@ namespace TinyRenderer {
         if(!t.is_valid() && !t.is_derived_from<Object>())
             return nullptr;
 
-        // 构建__type__类型实例
+        // if (t.is_derived_from<Resource>()) {
+        //     // TODO:处理Resource类型
+        // }
+
+        // 对于Object类型处理方法
         rttr::variant var = t.create();
         io::from_json(res_json, var);
 
@@ -82,31 +91,29 @@ namespace TinyRenderer {
     }
 
 
-
-    // TODO:实现一个序列化表，将已经序列化了的对象存起来，防止无限递归
     // 根据object的guid将它序列化到对应位置
-    bool AssetManager::save(Object *target_object_ptr) {
+    bool AssetManager::save(SerializableObject* target_object_ptr) {
         if(target_object_ptr == nullptr)
             return false;
 
         // 获取object的GUID 获取GUID对应的地址 文件保存为GUID.json
         GUID target_guid = target_object_ptr->get_guid();
-        if (serialized_guids_.contains(target_guid))
+        if (serialized_objects_.contains(target_guid))
             return true;
 
         if (root_serialized_object_ == nullptr)
             root_serialized_object_ = target_object_ptr;
-        serialized_guids_.insert(target_guid);
+        serialized_objects_.insert(target_guid);
 
-        std::filesystem::path t_path = GUID::guid_to_path(target_guid);;
         // 开始序列化
-        json resource_json = io::to_json(target_object_ptr);
+        ordered_json resource_json = io::to_json(target_object_ptr);
 
-        write_json_to_file(t_path, resource_json);
+        std::filesystem::path guid_path = GUID::guid_to_path(target_guid);
+        write_json_to_file(guid_path, resource_json);
 
         // 如果根object处理完退出
         if (target_object_ptr == root_serialized_object_) {
-            serialized_guids_.clear();
+            serialized_objects_.clear();
             root_serialized_object_ = nullptr;
         }
         return true;
@@ -121,7 +128,7 @@ namespace TinyRenderer {
     }
 
     // 将object的GUID和名字等关键信息保存为meta文件
-    bool AssetManager::save_to_meta(const std::filesystem::path& parent_dir, Object* target_object) {
+    bool AssetManager::save_to_meta(const std::filesystem::path& parent_dir, SerializableObject* target_object) {
         if(target_object == nullptr)
             return false;
 
