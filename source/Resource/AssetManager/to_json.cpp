@@ -4,7 +4,10 @@
 
 #include "to_json.h"
 #include <iostream>
-#include "Function/Framework/Object/SerializableObject.h"
+
+#include "Function/Framework/Level/Level.h"
+#include "Function/Framework/Object/PrimaryObject.h"
+#include "Function/Message/Message.h"
 #include "Resource/AssetManager/AssetManager.h"
 
 namespace TinyRenderer {
@@ -12,7 +15,9 @@ namespace TinyRenderer {
         void to_json_recursively(const rttr::instance &obj, ordered_json &json);
         bool write_variant(const std::string &name, rttr::variant &var, ordered_json &json);
 
+        // 处理基本类型 包括运算类型 字符串 GUID PrimaryObject* Resource*
         bool write_atomic_types_to_json(const std::string &name, const rttr::type &t, const rttr::variant &var, ordered_json &json) {
+            // std::string t_str = t.get_name().to_string();
             // 处理算术类型
             if (t.is_arithmetic()) {
                 if (t == rttr::type::get<bool>())
@@ -72,21 +77,19 @@ namespace TinyRenderer {
                 json[name] = guid.to_string();
                 return true;
             }
-            // TODO: 处理Resource类型
-            // else if (t is Resource* type)
-            // save var.GUID
-
-            // 遇到object*类型直接保存为GUID，并且将它保存到另一个GUID.json文件
-            else if(t.is_derived_from(rttr::type::get<SerializableObject>()) && t.is_pointer()) {
-                SerializableObject* obj = var.get_value<SerializableObject*>();
-                if (obj != nullptr) {
-                    json[name] = obj->get_guid().to_string();
-
-                    AssetManager::get_instance().save(obj);
+            // PrimaryObject*类型直接保存为GUID，并且将它保存到另一个GUID.json文件。Resource类型也是走这条路线
+            else if((t.is_derived_from<HierarchyNode>() || t.is_derived_from<PrimaryObject>()) && t.is_pointer()) {
+                rttr::variant converted_value = var.convert<PrimaryObject*>();
+                if (converted_value.is_valid()) {
+                    PrimaryObject* obj_ptr = converted_value.get_value<PrimaryObject*>();
+                    if (obj_ptr != nullptr) {
+                        std::string guid = obj_ptr->get_guid().to_string();
+                        json[name] = guid;
+                    }
                 }
                 return true;
             }
-
+            // Object*的对象会走正常对象处理的路线
             return false;
         }
 
@@ -98,28 +101,27 @@ namespace TinyRenderer {
                     ordered_json sequential_container_json;
                     write_array(container_name, item.create_sequential_view(), sequential_container_json);
                     array_json.push_back(sequential_container_json[container_name]);
-                } else {
+                }
+                else {
                     // 去除包裹类型，获取实际的值(去除atomic const)
                     rttr::variant wrapped_var = item.extract_wrapped_value();
                     rttr::type value_type = wrapped_var.get_type();
-                    // 处理基本类型 包括运算类型 字符串 GUID Object*
-                    if (value_type.is_arithmetic() || value_type == rttr::type::get<std::string>() || value_type.is_enumeration() || value_type == rttr::type::get<GUID>() || (value_type.is_derived_from(rttr::type::get<Object>()) && value_type.is_pointer())) {
-                        ordered_json value_json;
-                        write_atomic_types_to_json(container_name, value_type, wrapped_var, value_json);
+
+                    ordered_json value_json;
+                    if (write_atomic_types_to_json(container_name, value_type, wrapped_var, value_json)){
                         array_json.push_back(value_json[container_name]);
                     }
                     // 处理复合类型
                     else {
                         ordered_json obj_json;
                         to_json_recursively(wrapped_var, obj_json);
-                        array_json[container_name].push_back(obj_json);
+                        array_json.push_back(obj_json);
                     }
                 }
             }
             json[container_name] = std::move(array_json);
         }
 
-        // TODO:处理Object*->GUID
         void write_associative_container(const std::string &container_name,
                                          const rttr::variant_associative_view &view,
                                          ordered_json &json) {
@@ -145,10 +147,10 @@ namespace TinyRenderer {
 
                     write_variant(key_name.data(), item_first, kv_pair);
                     write_variant(value_name.data(), item_second, kv_pair);
-                    container_json.push_back(kv_pair);// 将键值对对象加入数组
+                    container_json[container_name].push_back(kv_pair);// 将键值对对象加入数组
                 }
             }
-            json[container_name] = container_json;// 将数组赋值给容器字段
+            json[container_name] = container_json[container_name];// 将数组赋值给容器字段
         }
 
         bool write_variant(const std::string &name, rttr::variant &var, ordered_json &json) {
@@ -210,9 +212,8 @@ namespace TinyRenderer {
                 if (!prop_value)
                     continue;
 
-                auto name = prop.get_name().to_string();
-                if (!write_variant(name, prop_value, json)) {
-                    std::cerr << "cannot serialize property: " << name << std::endl;
+                if (!write_variant(prop_name, prop_value, json)) {
+                    std::cerr << "cannot serialize property: " << prop_name << std::endl;
                 }
             }
         }
@@ -221,7 +222,7 @@ namespace TinyRenderer {
             if (!obj.is_valid())
                 return json();
             ordered_json res_json;
-            res_json["__type__"] = obj.get_derived_type().get_name().to_string();
+            // res_json["__type__"] = obj.get_derived_type().get_name().to_string();
             to_json_recursively(obj, res_json);
 
             return res_json;

@@ -4,16 +4,19 @@
 
 #include "GameObject.h"
 #include "Function/Framework/Level/Level.h"
+#include "Function/Framework/ObjectManager/ObjectManager.h"
 #include "Function/Message/Message.h"
 #include "Resource/AssetManager/AssetManager.h"
 
 REGISTRATION_WITH_CONSTRUCTOR_BEGIN(GameObject)
         .property("parent node",&GameObject::get_parent, &GameObject::set_parent)(
             METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
+        .property("transform", &GameObject::transform_)(
+            METADATA_SERIALIZE)
         .property("children", &GameObject::children_list_)(
             METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
         .property("components", &GameObject::component_map_)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT);
+            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
 REGISTRATION_END
 
 
@@ -104,13 +107,15 @@ namespace TinyRenderer {
 
     void GameObject::save() {
         AssetManager::get_instance().save(this);
-        // TODO: foreach : component.save
+        for (auto go : children_list_) {
+            if (go)
+                go->save();
+        }
     }
 
-
-    GameObject* GameObject::create(const std::string& name, GameObject* parent,const GUID& guid) {
-        GameObject* go = new GameObject(guid, name);
-        go->set_parent(parent);
+    GameObject* GameObject::create(const std::string& name, HierarchyNode* parent_node) {
+        GameObject* go = new GameObject(GUID::allocate_guid(), name);
+        go->set_parent(parent_node);
         return go;
     }
 
@@ -125,4 +130,28 @@ namespace TinyRenderer {
         return nullptr;
     }
 
+    void GameObject::unload() {
+        set_active(false);
+        auto it = children_list_.begin();
+        while (it != children_list_.end()) {
+            if (*it) {  // 元素非空
+                (*it)->unload();
+                ++it;
+            } else {    // 元素为空
+                it = children_list_.erase(it);  // erase返回下一个有效迭代器[2,3,7](@ref)
+            }
+        }
+
+        for (auto com_pair : component_map_) {
+            for (auto com : com_pair.second) {
+                if (com) {
+                    com->unload();
+                }
+                else {
+                    LOG_ERROR("GO:" << this->get_guid().to_string() << " : occur error when foreach component" << com_pair.first << " : but component is null");
+                }
+            }
+        }
+        ObjectManager::get_instance().unload_object(this);
+    }
 } // TinyRenderer

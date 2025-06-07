@@ -4,6 +4,7 @@
 
 #include "from_json.h"
 
+#include "Function/Components/login/login.h"
 #include "Resource/AssetManager/AssetManager.h"
 #include "Function/Framework/GameObject/GameObject.h"
 #include "Resource/GUID/GUID.h"
@@ -16,34 +17,29 @@ namespace TinyRenderer {
     namespace io {
         variant extract_basic_type(const json& j, const rttr::type& t, bool is_guidToObject);
         void from_json_recursively(instance obj2, json& source_json);
+        void write_associative_view_recursively(variant_associative_view &view, json &json_array_value, bool is_guidToObject);
 
         void write_array_recursively(variant_sequential_view &view, json &json_array_value, bool is_guidToObject)
         {
             view.set_size(json_array_value.size());
-            // 获取数组第一个元素类型
+            // 获取数组内的元素类型
             const type array_type = view.get_rank_type(1);
 
             for(size_t i = 0; i < json_array_value.size(); i++)
             {
                 auto& json_index_value = json_array_value[i];
-                if (json_index_value.empty())
+                if (json_index_value.empty()) {
+                    // TODO:测试值为null时是不是走这个路，是则考虑删除json_array_value数组中这一节点
                     continue;
+                }
                 // 处理嵌套容器情况
                 if(json_index_value.is_array())
                 {
                     auto sub_array_view = view.get_value(i).create_sequential_view();
                     write_array_recursively(sub_array_view, json_index_value, is_guidToObject);
                 }
-                // 处理对象情况 遇到Object*也会走这个分支
-                else if(json_index_value.is_object())
-                {
-                    variant var_tmp = view.get_value(i);
-                    variant wrapped_var = var_tmp.extract_wrapped_value();
-                    from_json_recursively(wrapped_var, json_index_value);
-                    view.set_value(i, wrapped_var);
-                }
                 // property为Object*类型，通过查找GUID获得真正的值
-                else if (array_type.is_derived_from(rttr::type::get<Object>()) && array_type.is_pointer()) {
+                else if (array_type.is_derived_from(rttr::type::get<PrimaryObject>()) && array_type.is_pointer()) {
                     // TODO:判断是Object*还是Resource*，Object*会走上一条分支，Resource*可以走下一个分支
                     // 查看序列化标志是否要反序列化
                     if (!is_guidToObject)
@@ -60,6 +56,29 @@ namespace TinyRenderer {
                         view.set_value(i, var);
                     }
                 }
+                // 处理对象情况 遇到Object*也会走这个分支
+                else if(json_index_value.is_object())
+                {
+                    // std::cout << json_index_value.dump(4) << std::endl;
+                    variant var_tmp = view.get_value(i);
+                    // TODO:这里需要为var_tmp判断是否为Object*类型，是则获取其中的__type__
+                    if (array_type.is_derived_from(rttr::type::get<Object>()) && array_type.is_pointer()) {
+                        if (!json_index_value.contains("__type__")) {
+                            LOG_ERROR("__type__ not found at type : " << array_type.get_name().to_string());
+                        }
+                        string type = json_index_value["__type__"];
+                        var_tmp = rttr::type::get_by_name(type).create();
+                    }
+
+                    if (!var_tmp.is_valid())
+                        continue;
+
+                    // variant wrapped_var = var_tmp.extract_wrapped_value();
+                    from_json_recursively(var_tmp, json_index_value);
+
+                    if (var_tmp.convert(array_type))
+                        view.set_value(i, var_tmp);
+                }
                 // 处理基本类型情况
                 else {
                     variant extracted_value = extract_basic_type(json_index_value, array_type, is_guidToObject);
@@ -71,6 +90,7 @@ namespace TinyRenderer {
 
         variant extract_value(json::iterator &itr, const type& t, bool is_guidToObject) {
             auto& json_value = itr.value();
+            // std::cout << json_value.dump(4) << std::endl;
             variant extracted_value = extract_basic_type(json_value, t, is_guidToObject);
             const bool could_convert = extracted_value.convert(t);
             if(!could_convert) {
@@ -83,10 +103,36 @@ namespace TinyRenderer {
                     extracted_value = ctor.invoke();
                     from_json_recursively(extracted_value, json_value);
                 }
-            }
+                else if (json_value.is_array()) {
+                    if (t.is_sequential_container()) {
+                        // 设置extract_value
+                        // std::cout << "sequential container" << std::endl;
+                        // std::string t_str = t.get_name().to_string();
+
+                        // 创建一个数组类型的variant。如vector<Object*>
+                        variant var_array = t.create();
+                        // auto var_array_type = var_array.get_type().get_name().to_string();
+                        if (var_array.is_valid()) {
+                            auto seq_view = var_array.create_sequential_view();
+                            write_array_recursively(seq_view, json_value, is_guidToObject);
+                            extracted_value = var_array;
+                        }
+                    }
+                    else if (t.is_associative_container()) {
+                        // std::cout << "associative container" << std::endl;
+                        variant var_array = t.create();
+                        if (var_array.is_valid()) {
+                            auto associate_view = var_array.create_associative_view();
+                            write_associative_view_recursively(associate_view, json_value, is_guidToObject);
+                            extracted_value = var_array;
+                        }
+                    }
+                }
+            } // TODO:判断是否为数组类型
             return extracted_value;
         }
 
+        // associative_view支持对象类型 vector<Component*> list<Component*>类型
         void write_associative_view_recursively(variant_associative_view &view, json &json_array_value, bool is_guidToObject)
         {
             const type key_type = view.get_key_type();
@@ -106,6 +152,9 @@ namespace TinyRenderer {
                         variant key_var = extract_value(key_itr, key_type, is_guidToObject);
 
                         variant value_var = extract_value(value_itr, value_type, is_guidToObject);
+
+                        auto value_var_type_str = value_var.get_type().get_name().to_string();
+                        auto value_type_str = value_type.get_name().to_string();
 
                         if(key_var.convert(key_type) && value_var.convert(value_type))
                         {
@@ -190,7 +239,7 @@ namespace TinyRenderer {
             }
 
             // TODO:要实现一个GUID->Reource*的分支 暂时使用Object*
-            else if (t.is_derived_from(rttr::type::get<Object>()) && t.is_pointer()) {
+            else if (t.is_derived_from(rttr::type::get<PrimaryObject>()) && t.is_pointer()) {
                 if (is_guidToObject) {
                     GUID guid(GUID(j.get<string>()));
                     if (guid.is_valid()) {
@@ -234,30 +283,41 @@ namespace TinyRenderer {
                         auto associative_view = var.create_associative_view();
                         write_associative_view_recursively(associative_view, json_value, is_guidToObject);
                     }
-                    prop.set_value(obj, var);
+                    if (var.convert(prop.get_type()))
+                        prop.set_value(obj, var);
                 }
                 // 特殊处理GUID
                 else if(prop_type == rttr::type::get<GUID>()){
                     string guid_str = json_value.get<string>();
                     GUID guid(guid_str);
-                    prop.set_value(obj, guid);
+                    if (guid.is_valid())
+                        prop.set_value(obj, guid);
                 }
-                // 处理object*类型 直接反序列化对应的GUID
-                else if ((prop_type.is_derived_from(rttr::type::get<Object>()) && prop_type.is_pointer()) || prop_type == rttr::type::get<HierarchyNode*>()) {
+                // 处理PrimaryObject*类型 直接反序列化对应的GUID。如Level GO Resource都是走这条路线。Resource通过重载set_guid自动实现加载
+                else if ((prop_type.is_derived_from(rttr::type::get<PrimaryObject>()) && prop_type.is_pointer()) || prop_type == rttr::type::get<HierarchyNode*>()) {
                     if (!is_guidToObject)
                         continue;
                     GUID guid(json_value.get<string>());
-                    // TODO:这里需要判断Resource类型，遇到Resource时直接调用variant var = t.create(GUID)，让资源类型自己加载即可
-                    // TODO:还需额外判断Component*类型，因为Component为Object类型的指针，但是需要提前开辟空间
                     variant var = AssetManager::get_instance().load_variant(guid);
                     if (var.convert(prop_type))
                         prop.set_value(obj, var);
                 }
-                // 处理对象类型
+                // 处理对象类型。Component和一般的复合成员对象都是走这条路线
                 else if(json_value.is_object()) {
                     variant var = prop.get_value(obj);
+
+                    // 判断Object*类型，因为Object*需要调用t.create提前开辟空间
+                    if (prop_type.is_derived_from(rttr::type::get<Object>()) && prop_type.is_pointer()) {
+                        var = prop_type.create();
+                        // 创建的Object不合法
+                        if (!var.is_valid()) {
+                            LOG_ERROR("Failed to create object from json" << " property type:" << prop_type.get_name().to_string() << "  json: " << json_value.dump(4));
+                            continue;
+                        }
+                    }
                     from_json_recursively(var, json_value);
-                    prop.set_value(obj, var);
+                    if (var.convert(prop_type))
+                        prop.set_value(obj, var);
                 }
                 // 处理基础类型
                 else{

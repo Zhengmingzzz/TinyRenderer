@@ -34,9 +34,11 @@ namespace TinyRenderer {
     public:
         std::string name_ = "default";
 
-        bool get_active() {
+
+        bool is_active() const {
             return is_active_;
         }
+
         void set_active(bool active) {
             is_active_ = active;
         }
@@ -50,8 +52,12 @@ namespace TinyRenderer {
         Object(const std::string& name) {
             name_ = name;
         }
+        // 获得最终的对象类型
+        std::string get_object_type() {
+            return rttr::type::get(*this).get_name().to_string();
+        }
 
-        virtual ~Object() = default;
+        virtual ~Object() = 0;
 
     private:
 

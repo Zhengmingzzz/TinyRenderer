@@ -2,26 +2,25 @@
 // Created by Administrator on 25-5-24.
 //
 #pragma once
-#include "Function/Framework/Object/Object.h"
 #include "Function/Framework/GameObject/GameObject.h"
-#include "Function/Framework/Object/HierarchyNode.h"
-#include "Function/Framework/Object/SerializableObject.h"
+#include "Function/Framework/HierarchyNode/HierarchyNode.h"
+#include "Function/Framework/Object/PrimaryObject.h"
 
 namespace TinyRenderer {
     class GameObject;
 
-    class Level : public HierarchyNode, public SerializableObject {
+    class Level : public HierarchyNode, public PrimaryObject {
     public:
         std::list<GameObject*> root_gameobject_list_; // 只存储根GO，GO下的子GO由它的父GO管理
     private:
 
     public:
         Level() = default;
-        Level(const GUID& guid) : SerializableObject(guid) {}
-        Level(const GUID& guid, const std::string& name) : SerializableObject(guid, name) {}
+        Level(const GUID& guid) : PrimaryObject(guid) {}
+        Level(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {}
 
+        static Level* create(const std::string& name = "default level", const std::filesystem::path &parent_dir = ConfigManager::get_instance().get_asset_fodder_path()/"Level");
         GameObject* get_gameobject(const std::string& name);
-
 
         void save();
         void tick();
@@ -32,7 +31,8 @@ namespace TinyRenderer {
         friend void GameObject::set_parent(HierarchyNode *parent);
         void on_add_child(HierarchyNode* node) override;
         void on_remove_child(HierarchyNode* node) override;
-        RTTR_ENABLE(HierarchyNode, SerializableObject)
+
+        RTTR_ENABLE(HierarchyNode, PrimaryObject)
     };
 } // TinyRenderer
 

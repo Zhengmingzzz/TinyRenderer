@@ -8,6 +8,8 @@
 #include "Function/StopWatch/StopWatchManager.h"
 #include "Core/MemoryManager/MemoryManager.h"
 #include "Core/ThreadPool/ThreadPool.h"
+#include "Function/Components/login/login.h"
+#include "Function/Components/Transform/Transform.h"
 #include "Function/Counter/CounterManager.h"
 #include "Function/Framework/Component/Component.h"
 
@@ -207,7 +209,7 @@ void mem_time_test() {
 
 
 #include "Function/Framework/Object/Object.h"
-using namespace TinyRenderer;;
+using namespace TinyRenderer;
 void Example::Main() {
 
 }

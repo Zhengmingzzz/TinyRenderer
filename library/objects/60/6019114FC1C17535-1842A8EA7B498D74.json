@@ -1,9 +1,9 @@
 {
     "__type__": "Level",
+    "name": "Sample Level",
+    "is active": false,
+    "guid": "6019114FC1C17535-1842A8EA7B498D74",
     "gameobject instance array": [
         "CD2DAB98F52B0BE0-184399FA1297A4F8"
-    ],
-    "guid": "6019114FC1C17535-1842A8EA7B498D74",
-    "is active": false,
-    "name": "Sample Level"
+    ]
 }

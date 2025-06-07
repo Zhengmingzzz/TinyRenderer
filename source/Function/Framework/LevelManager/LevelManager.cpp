@@ -5,6 +5,7 @@
 #include "LevelManager.h"
 
 #include "LevelConfig.h"
+#include "Function/Components/login/login.h"
 #include "Function/Framework/GameObject/GameObject.h"
 #include "Platform/ConfigManager/ConfigManager.h"
 #include "Function/Framework/Level/Level.h"
@@ -34,21 +35,22 @@ namespace TinyRenderer {
 
         // 首次创建场景，不存在active_level
         if (active_level_ == nullptr) {
-            active_level_ = create_level("Sample Level", ConfigManager::get_instance().get_asset_fodder_path()/("level"));
+            active_level_ = Level::create("Sample Level");
         }
     }
 
-    void LevelManager::shutdown() {
+    void LevelManager::shutdown() const {
         save();
     }
 
-    void LevelManager::set_active(const std::filesystem::path &meta_path) {
+    void LevelManager::set_active_level(const std::filesystem::path &meta_path) {
         GUID guid = GUID::metafile_path_to_guid(meta_path);
         if (guid.is_valid()) {
-            set_active(guid);
+            set_active_level(guid);
         }
     }
-    void LevelManager::set_active(const GUID &guid) {
+
+    void LevelManager::set_active_level(const GUID &guid) {
         if (!guid.is_valid())
             return;
         Object* obj = GUIDReference::get_instance().get_object(guid);
@@ -65,7 +67,7 @@ namespace TinyRenderer {
     }
 
 
-    void LevelManager::save() {
+    void LevelManager::save() const {
         if (!active_level_)
             return;
 
@@ -93,17 +95,13 @@ namespace TinyRenderer {
         }
     }
 
-    Level *LevelManager::create_level(const std::string &level_name, const std::filesystem::path &parent_dir) {
-        Level* level_ptr = new Level(GUID::allocate_guid(), level_name);
-        if (!level_ptr)
-            return nullptr;
-        AssetManager::get_instance().save_to_meta(parent_dir, level_ptr);
-        AssetManager::get_instance().save(level_ptr);
-
-        level_guid_list_.push_back(level_ptr->get_guid());
-        level_instance_list_.push_back(level_ptr);
-        return level_ptr;
+    void LevelManager::on_create_level(Level *level) {
+        if (!level)
+            return;
+        level_guid_list_.push_back(level->get_guid());
+        level_instance_list_.push_back(level);
     }
+
 
     void LevelManager::tick(float delta_time) {
         if (pending_load_level_guid_.is_valid())
@@ -113,22 +111,9 @@ namespace TinyRenderer {
         auto parent_go = active_level_->root_gameobject_list_.front();
         auto child_go = parent_go->children_list_.front();
 
-        // parent_go->set_parent(child_go);
-
-        // TODO:添加GO Component测试序列化
-        // GameObject* go = GameObject::create("third GO" ,child_go);
-
-
-        // for (auto level_ptr : level_instance_list_) {
-        //     if (level_ptr && level_ptr->get_active()) {
-        //         level_ptr->tick();
-        //     }
-        // }
-
-        // set_active(level_instance_list_.back()->get_guid());
-        // unload_level(level_instance_list_.front()->get_guid());
-        // load_level(ConfigManager::get_instance().get_asset_fodder_path()/("level")/("2nd Level.Level.json"));
-        // create_level("2nd Level", ConfigManager::get_instance().get_asset_fodder_path()/("level"));
+        // auto ptr = parent_go->add_component<login>();
+        // ptr->name_ = "second login component";
+        // ptr->example_str = "second login example";
     }
 
     // 延迟到下一帧加载场景

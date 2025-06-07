@@ -30,10 +30,16 @@ namespace TinyRenderer {
 
         set_active(false);
 
-        for (auto& go_ptr : root_gameobject_list_) {
-            // if (go_ptr)
-            //     go_ptr->unload();
+        auto go_it = root_gameobject_list_.begin();
+        while (go_it != root_gameobject_list_.end()) {
+            if (*go_it) {
+                (*go_it)->unload();
+            }
+            else {
+                go_it = root_gameobject_list_.erase(go_it);
+            }
         }
+
         // 由object_manager统一销毁
         ObjectManager::get_instance().unload_object(this);
     }
@@ -49,6 +55,18 @@ namespace TinyRenderer {
             root_gameobject_list_.remove(go);
         }
     }
+
+    Level *Level::create(const std::string &name, const std::filesystem::path &parent_dir) {
+        Level* level_ptr = new Level(GUID::allocate_guid(), name);
+
+        AssetManager::get_instance().save_to_meta(parent_dir, level_ptr);
+        AssetManager::get_instance().save(level_ptr);
+
+        LevelManager::get_instance().on_create_level(level_ptr);
+
+        return level_ptr;
+    }
+
 
 
 } // TinyRenderer

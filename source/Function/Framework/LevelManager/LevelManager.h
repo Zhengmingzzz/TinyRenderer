@@ -13,7 +13,7 @@ namespace TinyRenderer {
     public:
 
     public:
-        Level* active_level_;
+        Level* active_level_ = nullptr;
 
     private:
         GUID pending_load_level_guid_;
@@ -30,18 +30,18 @@ namespace TinyRenderer {
         }
 
         void startup();
-        void shutdown();
+        void shutdown() const;
 
         void tick(float delta_time);
-        void save();
-        void set_active(const std::filesystem::path& meta_path);
-        void set_active(const GUID& guid);
-        Level* get_active_level() {
+        void save() const;
+        void set_active_level(const std::filesystem::path& meta_path);
+        void set_active_level(const GUID& guid);
+        Level* get_active_level() const {
             return active_level_;
         }
 
-
-        Level* create_level(const std::string& level_name, const std::filesystem::path& parent_dir);
+        void on_create_level(Level* level);
+        // Level* create_level(const std::string& level_name, const std::filesystem::path& parent_dir = ConfigManager::get_instance().get_asset_fodder_path() / "Level");
         void destroy_level(const std::filesystem::path& meta_path);
 
         void load_level(const std::filesystem::path& meta_path);
@@ -57,6 +57,4 @@ namespace TinyRenderer {
 
         void pending_load_level();
     };
-
-
 } // TinyRenderer

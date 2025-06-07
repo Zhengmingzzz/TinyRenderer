@@ -28,6 +28,18 @@ namespace TinyRenderer {
         virtual void pre_render(){};
         virtual void render(){};
         virtual void post_render(){};
+        virtual void on_destroy(){};
+
+        void unload() {
+            on_destroy();
+        }
+
+        Component() = default;
+
+        Component(GameObject* owner_go) {
+            set_owner_object(owner_go);
+        }
+        ~Component() override = 0;
 
     private:
 

@@ -1,11 +1,52 @@
 {
     "__type__": "GameObject",
+    "name": "first GO",
+    "is active": true,
+    "guid": "CD2DAB98F52B0BE0-184399FA1297A4F8",
+    "parent node": "6019114FC1C17535-1842A8EA7B498D74",
+    "transform": {
+        "__type__": "Transform",
+        "name": "default",
+        "is active": true,
+        "owner_object": "CD2DAB98F52B0BE0-184399FA1297A4F8",
+        "position": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "rotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+        }
+    },
     "children": [
         "A3DE492CA7551268-1843A0E9C6F4B79C"
     ],
-    "components": null,
-    "guid": "CD2DAB98F52B0BE0-184399FA1297A4F8",
-    "is active": true,
-    "name": "first GO",
-    "parent node": "6019114FC1C17535-1842A8EA7B498D74"
+    "components": [
+        {
+            "key": "login",
+            "value": [
+                {
+                    "__type__": "login",
+                    "name": "default",
+                    "is active": true,
+                    "owner_object": "CD2DAB98F52B0BE0-184399FA1297A4F8",
+                    "example_str": "hello component"
+                },
+                {
+                    "__type__": "login",
+                    "name": "second login component",
+                    "is active": true,
+                    "owner_object": "CD2DAB98F52B0BE0-184399FA1297A4F8",
+                    "example_str": "second login example"
+                }
+            ]
+        }
+    ]
 }

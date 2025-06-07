@@ -6,18 +6,14 @@
 
 namespace TinyRenderer {
     // 可单独序列化的对象
-    class SerializableObject : public Object {
+    class PrimaryObject : public Object {
     public:
-        SerializableObject() = default;
-        SerializableObject(const GUID& guid){
-            if(!guid.is_valid())
-                return;
-            guid_ = guid;
-
-            GUIDReference::get_instance().register_object(guid_, this);
+        PrimaryObject() = default;
+        PrimaryObject(const GUID& guid){
+            PrimaryObject::set_guid(guid);
         }
 
-        SerializableObject(const GUID& guid, const std::string& object_name) : SerializableObject(guid) {
+        PrimaryObject(const GUID& guid, const std::string& object_name) : PrimaryObject(guid) {
             GUIDReference::get_instance().register_object(guid, this);
             name_ = object_name;
         }
@@ -25,7 +21,7 @@ namespace TinyRenderer {
         const GUID& get_guid(){
             return guid_;
         }
-        void set_guid(const GUID& guid){
+        virtual void set_guid(const GUID& guid){
             if (guid_.is_valid())
                 GUIDReference::get_instance().unregister_object(guid);
             if (guid.is_valid())
@@ -33,7 +29,7 @@ namespace TinyRenderer {
             guid_ = guid;
         }
 
-        ~SerializableObject() {
+        ~PrimaryObject() override {
             GUIDReference::get_instance().unregister_object(guid_);
         }
     private:

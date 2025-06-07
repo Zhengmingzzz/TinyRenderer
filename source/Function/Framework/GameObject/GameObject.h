@@ -5,19 +5,22 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <rttr/registration>
 
+#include "Function/Components/Transform/Transform.h"
 #include "Function/Framework/Component/Component.h"
 #include "Function/Framework/LevelManager/LevelManager.h"
-#include "Function/Framework/Object/HierarchyNode.h"
-#include "Function/Framework/Object/SerializableObject.h"
+#include "Function/Framework/HierarchyNode/HierarchyNode.h"
+#include "Function/Framework/Object/PrimaryObject.h"
+#include "Function/Message/Message.h"
 
 namespace TinyRenderer {
     class Level;
 
-    class GameObject : public HierarchyNode, public SerializableObject {
+    class GameObject : public HierarchyNode, public PrimaryObject {
     public:
+        Transform transform_;
         std::list<GameObject*> children_list_;
+
 
     private:
         HierarchyNode* parent_node_ = nullptr; // 有可能是GO，也有可能是Level，表示上一层级的节点
@@ -26,14 +29,18 @@ namespace TinyRenderer {
 
     public:
         // 默认属于
-        static GameObject* create(const std::string& name = "default GO", GameObject* parent_ = nullptr ,const GUID& guid = GUID::allocate_guid());
-        GameObject()  = default;
-        GameObject(const GUID& guid, const std::string& name) : SerializableObject(guid, name) {
+        static GameObject* create(const std::string& name = "default GO", HierarchyNode* parent_node = nullptr);
+        GameObject() {
+            transform_.set_owner_object(this);
+        }
+        GameObject(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {
+            transform_.set_owner_object(this);
         }
 
         template<class T>
         T* add_component() {
             rttr::type t = rttr::type::get<T>();
+            // TODO:还要进行检测，防止重复添加一些不能重复添加的组件
             // 必须继承自component
             if (!t.is_derived_from(rttr::type::get<Component>()))
                 return nullptr;
@@ -45,7 +52,10 @@ namespace TinyRenderer {
 
             Component* com = var.get_value<Component*>();
             std::string map_key = t.get_name().to_string();
-            // TODO:补全
+            if (!com) {
+                LOG_WARN("add_component failed when var.get_value<Component*>() GO_GUID:" << this->get_guid().to_string() << " Component:" << t.get_name().to_string());
+                return nullptr;
+            }
             com->set_owner_object(this);
             // 若存在对应组件的key，则直接添加com
             if (component_map_.contains(map_key)) {
@@ -54,7 +64,12 @@ namespace TinyRenderer {
             else {
                 component_map_.emplace(map_key, std::vector<Component*>{com});
             }
-            return com;
+            return var.get_value<T*>();
+        }
+
+        template<>
+        Transform* add_component() {
+            return &transform_;
         }
 
         template<class T>
@@ -68,9 +83,14 @@ namespace TinyRenderer {
             std::string map_key = t.get_name().to_string();
             if (component_map_.contains(map_key)) {
                 if (component_map_[map_key].size() > 0)
-                    res = component_map_[map_key].front();
+                    res = rttr::rttr_cast<T*>(component_map_[map_key].front());
             }
             return res;
+        }
+
+        template<>
+        Transform* get_component() {
+            return &transform_;
         }
 
         template<class T>
@@ -89,7 +109,6 @@ namespace TinyRenderer {
             return res;
         }
 
-
         HierarchyNode* get_parent() const;
         void set_parent(HierarchyNode* parent);
 
@@ -99,14 +118,14 @@ namespace TinyRenderer {
 
         void save();
 
+        void unload();
+
     private:
         void on_add_child(HierarchyNode* child) override;
         void on_remove_child(HierarchyNode* child) override;
 
-
-
         RTTR_REGISTRATION_FRIEND
-        RTTR_ENABLE(HierarchyNode, SerializableObject)
+        RTTR_ENABLE(HierarchyNode, PrimaryObject)
     };
 } // TinyRenderer
 

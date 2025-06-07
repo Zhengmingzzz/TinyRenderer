@@ -67,7 +67,7 @@ namespace TinyRenderer {
 
         bool is_valid() const
         {
-            return !guid_.empty();
+            return !guid_.empty() && guid_.size() == 33;
         }
 
         static std::filesystem::path guid_to_path(const GUID& guid) {
@@ -106,16 +106,10 @@ namespace TinyRenderer {
             return engine();
         }
     private:
-        std::string guid_ = "";
+        std::string guid_;
 
         RTTR_REGISTRATION_FRIEND
     };
-
-    // struct GUIDHash {
-    //     size_t operator()(const GUID& guid) const noexcept {
-    //
-    //     }
-    // };
 
 }
 namespace std {

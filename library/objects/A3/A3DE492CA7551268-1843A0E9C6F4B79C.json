@@ -1,9 +1,30 @@
 {
     "__type__": "GameObject",
-    "children": null,
-    "components": null,
-    "guid": "A3DE492CA7551268-1843A0E9C6F4B79C",
-    "is active": true,
     "name": "Second GO",
-    "parent node": "CD2DAB98F52B0BE0-184399FA1297A4F8"
+    "is active": true,
+    "guid": "A3DE492CA7551268-1843A0E9C6F4B79C",
+    "parent node": "CD2DAB98F52B0BE0-184399FA1297A4F8",
+    "transform": {
+        "__type__": "Transform",
+        "name": "default",
+        "is active": true,
+        "owner_object": "A3DE492CA7551268-1843A0E9C6F4B79C",
+        "position": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "rotation": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        },
+        "scale": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0
+        }
+    },
+    "children": null,
+    "components": null
 }
