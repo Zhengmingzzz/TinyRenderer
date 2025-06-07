@@ -111,6 +111,8 @@ namespace TinyRenderer {
         auto parent_go = active_level_->root_gameobject_list_.front();
         auto child_go = parent_go->children_list_.front();
 
+        auto t = parent_go->get_component<login>();
+
         // auto ptr = parent_go->add_component<login>();
         // ptr->name_ = "second login component";
         // ptr->example_str = "second login example";

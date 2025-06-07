@@ -16,7 +16,6 @@ namespace TinyRenderer {
     // 提供资源的加载 卸载服务
     // TODO:AssetManager职责过重，需要拆分为多个模块
     // TODO:GUIDTOOBJECT似乎没什么用，尝试删除
-    // TODO:尝试只注册Component*，看看反序列化中调用create时候，能否成功生成vector<Component*>
     class AssetManager {
     public:
 

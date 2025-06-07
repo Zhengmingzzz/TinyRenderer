@@ -29,6 +29,7 @@ rttr::registration::class_<className>(#className)
 
 
 namespace TinyRenderer {
+    // TODO:移除Object的name_字段
     // 万物的基类
     class Object {
     public:
