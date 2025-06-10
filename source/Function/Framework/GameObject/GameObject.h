@@ -16,7 +16,8 @@
 namespace TinyRenderer {
     class Level;
 
-    class GameObject : public HierarchyNode, public PrimaryObject {
+    class GameObject : public PrimaryObject, public HierarchyNode {
+        friend Component::~Component();
     public:
         Transform transform_;
         std::list<GameObject*> children_list_;
@@ -26,7 +27,7 @@ namespace TinyRenderer {
         HierarchyNode* parent_node_ = nullptr; // 有可能是GO，也有可能是Level，表示上一层级的节点
 
         std::unordered_map<std::string, std::vector<Component*>> component_map_;
-
+        bool is_destroyed_ = false;
     public:
         // 默认属于
         static GameObject* create(const std::string& name = "default GO", HierarchyNode* parent_node = nullptr);
@@ -35,6 +36,14 @@ namespace TinyRenderer {
         }
         GameObject(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {
             transform_.set_owner_object(this);
+        }
+
+        ~GameObject() override {
+            is_destroyed_ = true;
+            if(parent_node_) {
+                parent_node_->on_remove_child(this);
+                parent_node_ = nullptr;
+            }
         }
 
         template<class T>
@@ -119,6 +128,7 @@ namespace TinyRenderer {
         void save();
 
         void unload();
+        void on_unload_component(Component*); // 移除component子组件
 
     private:
         void on_add_child(HierarchyNode* child) override;

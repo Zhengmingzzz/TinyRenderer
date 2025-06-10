@@ -7,7 +7,7 @@
 #include "Core/MemoryManager/MemoryManager.h"
 
 namespace TinyRenderer {
-    DebugMemoryManager& DebugMemoryManager::instance() {
+    DebugMemoryManager& DebugMemoryManager::get_instance() {
         static DebugMemoryManager* instance = nullptr;
         if (instance == nullptr) {
             instance = new DebugMemoryManager();
@@ -16,11 +16,11 @@ namespace TinyRenderer {
     }
 
     void DebugMemoryManager::startup() {
-        debug_allocators_.resize(MemoryManager::instance().MAX_TWOPOWERI+1);
+        debug_allocators_.resize(MemoryManager::get_instance().MAX_TWOPOWERI+1);
     }
 
 
-    void DebugMemoryManager::shutDown() {
+    void DebugMemoryManager::shutdown() {
         // // 记录结束时间
         // end_time_ = std::chrono::system_clock::now();
         // // 计算总的时间间隔
@@ -37,9 +37,8 @@ namespace TinyRenderer {
         // json_stream.save(std::move(log_page), mem_log_info);
     }
 
-    void DebugMemoryManager::on_alloc_block(int block_size,void* block, std::string&& file, size_t line) {
-        int allocator_idx = std::log2(block_size);
-        debug_allocators_[allocator_idx].on_allocate_block(block, std::move(file), line);
+    void DebugMemoryManager::on_alloc_block(int alloc_idx,void* block, std::string&& file, size_t line) {
+        debug_allocators_[alloc_idx].on_allocate_block(block, std::move(file), line);
         // total_alloc_cnt_++;
     }
 

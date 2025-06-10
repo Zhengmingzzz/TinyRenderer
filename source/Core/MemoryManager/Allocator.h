@@ -49,7 +49,7 @@ namespace TinyRenderer {
 
     public:
         void startUp(size_t block_size,size_t blockNum_perPage);
-        void shutDown();
+        void shutdown();
 
         void* allocate();
         bool try_dellocate(Page* target_page, Block* target_block, bool& isRecycle_page); // 由MemoryManager提供指定的page回收ptr,Allocator判断ptr在Page中

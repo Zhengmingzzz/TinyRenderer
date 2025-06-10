@@ -7,7 +7,7 @@
 #include "Function/Message/Message.h"
 
 namespace TinyRenderer {
-    TinyRenderer::CounterManager &TinyRenderer::CounterManager::instance() {
+    TinyRenderer::CounterManager &TinyRenderer::CounterManager::get_instance() {
         static CounterManager* instance = nullptr;
         if (!instance) {
             instance = new CounterManager();
@@ -16,14 +16,14 @@ namespace TinyRenderer {
     }
 
     void CounterManager::startUp() {
-        instance();
+        get_instance();
     }
-    void CounterManager::shutDown() {
+    void CounterManager::shutdown() {
         for (auto& counter : counterMap_) {
             delete counter.second;
         }
         counterMap_.clear();
-        delete &instance();
+        delete &get_instance();
     }
 
     Counter* CounterManager::CreateCounter(const char* name) {

@@ -12,6 +12,7 @@
 #include "Function/Components/Transform/Transform.h"
 #include "Function/Counter/CounterManager.h"
 #include "Function/Framework/Component/Component.h"
+#include "Function/Framework/GameObject/GameObject.h"
 
 
 using namespace TinyRenderer;
@@ -85,26 +86,26 @@ void delegate_test()
 }
 
 void threadpool_test() {
-	ThreadPool::instance().startUp(2);
-	TaskResult<void> res1 = ThreadPool::instance().enqueue(
+	ThreadPool::get_instance().startUp(2);
+	TaskResult<void> res1 = ThreadPool::get_instance().enqueue(
             TaskPriority::Medium,
             []{ cout << ("???????????1") << endl;});
 
-	TaskResult<void> res2 = ThreadPool::instance().enqueue(
+	TaskResult<void> res2 = ThreadPool::get_instance().enqueue(
             TaskPriority::Medium,
             []{ cout << ("???????????2")<<endl; });
 
-	TaskResult<void> res3 = ThreadPool::instance().enqueue(
+	TaskResult<void> res3 = ThreadPool::get_instance().enqueue(
             TaskPriority::Medium,
             []{ cout << ("???????????3")<<endl; });
 
-	TaskResult<void> res4 = ThreadPool::instance().enqueue(
+	TaskResult<void> res4 = ThreadPool::get_instance().enqueue(
             TaskPriority::Low,
             []{ cout << ("???????????4") << endl; });
 
-	ThreadPool::instance().enqueue(TaskPriority::High, []{ThreadPool::instance().adjust_workers();});
+	ThreadPool::get_instance().enqueue(TaskPriority::High, []{ThreadPool::get_instance().adjust_workers();});
 
-	ThreadPool::instance().shutDown();
+	ThreadPool::get_instance().shutdown();
 }
 
 
@@ -177,11 +178,11 @@ void SimpleMemoryTest() {
 }
 
 void mem_time_test() {
-	MemoryManager::instance().startUp();
-	ThreadPool::instance().startUp();
+	MemoryManager::get_instance().startUp();
+	ThreadPool::get_instance().startUp();
 
-	CounterManager::instance().startUp();
-	StopWatchManager::instance().startUp();
+	CounterManager::get_instance().startUp();
+	StopWatchManager::get_instance().startUp();
 
 	StopWatch sw;
 	sw.Start();
@@ -189,16 +190,16 @@ void mem_time_test() {
 	sw.Pause();
 	std::cout << "mem_test cost: " << sw.microseconds() << " microseconds" << std::endl;
 
-	StopWatchManager::instance().shutDown();
-	CounterManager::instance().shutDown();
+	StopWatchManager::get_instance().shutdown();
+	CounterManager::get_instance().shutdown();
 
 
-	ThreadPool::instance().shutDown();
-	MemoryManager::instance().shutDown();
+	ThreadPool::get_instance().shutdown();
+	MemoryManager::get_instance().shutdown();
 }
 
 // void asyncIO_test() {
-// 	auto res = ResourceManager::instance().async_load<json>(FileServer::get_rootPath()/"logs"/"DebugMemoryLog"/"MemoryManager_log.json");
+// 	auto res = ResourceManager::get_instance().async_load<json>(FileServer::get_rootPath()/"logs"/"DebugMemoryLog"/"MemoryManager_log.json");
 // 	while (!res.is_done()) {
 // 		std::cout << "?????????ɡ?????"<<endl;
 // 	}
@@ -211,5 +212,9 @@ void mem_time_test() {
 #include "Function/Framework/Object/Object.h"
 using namespace TinyRenderer;
 void Example::Main() {
-
+	// MemoryManager::get_instance().startUp();
+	// GameObject* go = newElement(GameObject);
+	// deleteElement(go);
+	// MemoryManager::get_instance().shutdown();
+	// exit(0);
 }

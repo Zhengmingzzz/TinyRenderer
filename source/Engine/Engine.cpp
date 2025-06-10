@@ -4,17 +4,13 @@
 
 #include "Engine.h"
 
+#include "Core/MemoryManager/MemoryManager.h"
 #include "Function/Framework/LevelManager/LevelManager.h"
+#include "Function/Framework/ObjectManager/ObjectManager.h"
 #include "Platform/ConfigManager/ConfigManager.h"
 // #include "Framework/level/level_manager.h"
 
 namespace TinyRenderer {
-    //
-    // Created by Administrator on 25-5-15.
-    //
-
-
-
     Engine& Engine::get_instance()
     {
         static Engine engine_instance;
@@ -23,12 +19,15 @@ namespace TinyRenderer {
 
     void Engine::startup()
     {
+        MemoryManager::get_instance().startUp();
         ConfigManager::get_instance().startup();
         LevelManager::get_instance().startup();
     }
 
     void Engine::shutdown() {
         LevelManager::get_instance().shutdown();
+        ObjectManager::get_instance().shutdown();
+        MemoryManager::get_instance().shutdown();
     }
 
     void Engine::run() {
@@ -54,5 +53,6 @@ namespace TinyRenderer {
     void Engine::logicalTick(float delta_time)
     {
         LevelManager::get_instance().tick(delta_time);
+        ObjectManager::get_instance().tick();
     }
 } // TinyRenderer

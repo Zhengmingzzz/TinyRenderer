@@ -11,7 +11,11 @@ namespace TinyRenderer {
     public:
         std::string example_str;
     private:
+        void awake() override {
+            std::cout << "Awake" << std::endl;
+        }
     public:
+
     private:
 
         RTTR_ENABLE(Component)

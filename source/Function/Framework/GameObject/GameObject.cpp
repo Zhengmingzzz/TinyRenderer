@@ -25,7 +25,6 @@ namespace TinyRenderer {
         return parent_node_;
     }
 
-    // TODO:重构
     // 通过此接口进行父子层级转换
     void GameObject::set_parent(HierarchyNode* new_parent) {
         // 传入null则把他设置为当前场景根节点
@@ -113,6 +112,21 @@ namespace TinyRenderer {
         }
     }
 
+    void GameObject::on_unload_component(Component *com) {
+        if (com == nullptr)
+            return;
+
+        std::string com_name = com->get_object_type();
+        if (component_map_.contains(com_name)) {
+            auto components_array = component_map_[com_name];
+            auto com_it = std::find(components_array.begin(), components_array.end(), com);
+            if (com_it != components_array.end()) {
+                components_array.erase(com_it);
+            }
+        }
+    }
+
+
     GameObject* GameObject::create(const std::string& name, HierarchyNode* parent_node) {
         GameObject* go = new GameObject(GUID::allocate_guid(), name);
         go->set_parent(parent_node);
@@ -131,7 +145,8 @@ namespace TinyRenderer {
     }
 
     void GameObject::unload() {
-        set_active(false);
+        // set_active(false);
+        // 遍历GO的子GO，调用unload
         auto it = children_list_.begin();
         while (it != children_list_.end()) {
             if (*it) {  // 元素非空
@@ -142,6 +157,7 @@ namespace TinyRenderer {
             }
         }
 
+        // 遍历所有component调用unload
         for (auto com_pair : component_map_) {
             for (auto com : com_pair.second) {
                 if (com) {
@@ -152,6 +168,7 @@ namespace TinyRenderer {
                 }
             }
         }
+
         ObjectManager::get_instance().unload_object(this);
     }
 } // TinyRenderer

@@ -23,14 +23,14 @@ namespace TinyRenderer {
         // DEBUG_MEM_ALLOCATOR_STARTUP(block_size, min_blockNum_perPage, max_blockNum_perPage);
     }
 
-    void Allocator::shutDown() {
+    void Allocator::shutdown() {
         Page* cur_page = priority_pagehead_, *next_page = nullptr;
         // 处理pagelist
         // 把最后一个节点的next指向nullptr，防止循环遍历
         if (cur_page != nullptr)
             cur_page->prev->next = nullptr;
         while (cur_page != nullptr) {
-            cur_page->shutDown();
+            cur_page->shutdown();
             next_page = cur_page->next;
             free(cur_page);
             cur_page = next_page;
@@ -41,7 +41,7 @@ namespace TinyRenderer {
         if (cur_page != nullptr)
             cur_page->prev->next = nullptr;
         while (cur_page != nullptr) {
-            cur_page->shutDown();
+            cur_page->shutdown();
             next_page = cur_page->next;
             free(cur_page);
             cur_page = next_page;
@@ -70,7 +70,6 @@ namespace TinyRenderer {
                 insert_page(closed_pagelist_, cur_page);
 
             }
-            // new_count_ += 1;
         }
 
         return res;
@@ -86,6 +85,7 @@ namespace TinyRenderer {
             return false;
 
         // delete_count_ += 1;
+        DEBUG_MEM_DEALLOCATE_BLOCK(block_size_, target_block);
 
         // 如果页为空了，根据b_isRecycle判断是否要回收页
         if (target_page->current_block_num_ == target_page->total_block_num_) {

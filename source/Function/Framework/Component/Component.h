@@ -3,6 +3,7 @@
 //
 #pragma once
 #include "Function/Framework/Object/Object.h"
+#include "Function/Framework/ObjectManager/ObjectManager.h"
 
 
 namespace TinyRenderer {
@@ -15,7 +16,7 @@ namespace TinyRenderer {
         GameObject* get_owner_object() const;
 
     private:
-        GameObject* owner_object_;
+        GameObject* owner_object_ = nullptr;
 
 
     public:
@@ -32,6 +33,7 @@ namespace TinyRenderer {
 
         void unload() {
             on_destroy();
+            ObjectManager::get_instance().unload_object(this);
         }
 
         Component() = default;
@@ -39,7 +41,8 @@ namespace TinyRenderer {
         Component(GameObject* owner_go) {
             set_owner_object(owner_go);
         }
-        ~Component() override = 0;
+
+        ~Component() override;
 
     private:
 

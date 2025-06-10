@@ -11,11 +11,11 @@ namespace TinyRenderer {
     class DebugMemoryManager {
     public:
         void startup();
-        void shutDown();
+        void shutdown();
 
         // void on_allocator_startUp(int block_size, int min_block_num_perPage, int max_block_num_perPage);
 
-        void on_alloc_block(int block_size,void* block, std::string&& file, size_t line);
+        void on_alloc_block(int alloc_idx,void* block, std::string&& file, size_t line);
         void on_dealloc_block(int block_size, void* block);
 
         // void on_allocate_newPage(void* page, int block_size, int block_num);
@@ -32,7 +32,7 @@ namespace TinyRenderer {
         // time_point end_time_;
         // size_t survival_time_;
     public:
-        static DebugMemoryManager& instance();
+        static DebugMemoryManager& get_instance();
         DebugMemoryManager(const DebugMemoryManager&) = delete;
         DebugMemoryManager& operator=(const DebugMemoryManager&) = delete;
 
@@ -44,12 +44,12 @@ namespace TinyRenderer {
 
 #ifdef _DEBUG
 // 生命周期管理宏组
-    #define DEBUG_MEM_STARTUP() DebugMemoryManager::instance().startup();
-    #define DEBUG_MEM_SHUTDOWN() DebugMemoryManager::instance().shutDown();
+    #define DEBUG_MEM_STARTUP() DebugMemoryManager::get_instance().startup();
+    #define DEBUG_MEM_SHUTDOWN() DebugMemoryManager::get_instance().shutdown();
 
 // 内存分配追踪宏组
-    #define DEBUG_MEM_ALLOCATE_BLOCK(size, block_addr, file, line) DebugMemoryManager::instance().on_alloc_block(size, block_addr, std::move(file), line);
-    #define DEBUG_MEM_DEALLOCATE_BLOCK(size,ptr) DebugMemoryManager::instance().on_dealloc_block(size, ptr);
+    #define DEBUG_MEM_ALLOCATE_BLOCK(alloc_idx, block_addr, file, line) DebugMemoryManager::get_instance().on_alloc_block(alloc_idx, block_addr, std::move(file), line);
+    #define DEBUG_MEM_DEALLOCATE_BLOCK(size,ptr) DebugMemoryManager::get_instance().on_dealloc_block(size, ptr);
 
     //#define DEBUG_MEM_ALLOCATE_NEW_PAGE(size, page_ptr, block_num) DebugMemoryManager::instance().on_allocate_newPage(page_ptr, size, block_num);
     //#define DEBUG_MEM_DEALLOCATE_NEW_PAGE(size, page_ptr) DebugMemoryManager::instance().on_deallocate_page(size, page_ptr);

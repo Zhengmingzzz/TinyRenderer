@@ -2,7 +2,7 @@
 
 namespace TinyRenderer
 {
-	StopWatchManager& StopWatchManager::instance()
+	StopWatchManager& StopWatchManager::get_instance()
 	{
 		static StopWatchManager* instance = nullptr;
 		if(instance == nullptr)
@@ -11,10 +11,10 @@ namespace TinyRenderer
 	}
 	void StopWatchManager::startUp()
 	{
-		instance();
+		get_instance();
 	}
 
-	void StopWatchManager::shutDown()
+	void StopWatchManager::shutdown()
 	{
 		for (auto& stopWatch : stopWatchMap_)
 		{
@@ -22,7 +22,7 @@ namespace TinyRenderer
 		}
 		stopWatchMap_.clear();
 
-		delete &instance();
+		delete &get_instance();
 	}
 
 	StopWatch* StopWatchManager::create_stopWatch(const char* name)

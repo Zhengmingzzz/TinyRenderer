@@ -274,10 +274,13 @@ namespace TinyRenderer {
                 bool is_guidToObject = prop.get_metadata(PROPERTY_FLAG_GUIDTOOBJECT).to_bool();
                 // 处理数组类型
                 if(json_value.is_array()) {
-                    variant var = prop.get_value(obj);
+                    variant var;
+                    var = prop.get_value(obj);
+
                     if (prop_type.is_sequential_container()) {
                         auto view = var.create_sequential_view();
-                        write_array_recursively(view, json_value, is_guidToObject);
+                        if (view.is_valid())
+                            write_array_recursively(view, json_value, is_guidToObject);
                     }
                     else if (prop_type.is_associative_container()) {
                         auto associative_view = var.create_associative_view();
@@ -298,11 +301,14 @@ namespace TinyRenderer {
                     if (!is_guidToObject)
                         continue;
                     GUID guid(json_value.get<string>());
-                    variant var = AssetManager::get_instance().load_variant(guid);
+                    variant var = prop.get_value(obj);
+                    // HierarchyNode* pobj = var.get_value<HierarchyNode*>();
+                    var = AssetManager::get_instance().load_variant(guid);
+                    // pobj = var.get_value<HierarchyNode*>();
                     if (var.convert(prop_type))
                         prop.set_value(obj, var);
                 }
-                // 处理对象类型。Component和一般的复合成员对象都是走这条路线
+                // 处理对象类型 Component和一般的复合成员对象都是走这条路线
                 else if(json_value.is_object()) {
                     variant var = prop.get_value(obj);
 

@@ -49,7 +49,7 @@ namespace TinyRenderer {
         void load_level_async(const std::filesystem::path& meta_path);
         void load_level_async(const GUID& guid);
 
-        bool on_unload_level(const GUID& guid);
+        bool on_unload_level(Level* level);
         void unload_level_async(const std::filesystem::path& meta_path);
         void unload_level_async(const GUID& guid);
     private:

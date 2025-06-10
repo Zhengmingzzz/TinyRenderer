@@ -25,21 +25,13 @@ namespace TinyRenderer {
 
 
     void Level::unload() {
-        if (LevelManager::get_instance().on_unload_level(get_guid()) == false)
-            return;
-
-        set_active(false);
-
         auto go_it = root_gameobject_list_.begin();
         while (go_it != root_gameobject_list_.end()) {
             if (*go_it) {
                 (*go_it)->unload();
-            }
-            else {
-                go_it = root_gameobject_list_.erase(go_it);
+                ++go_it;
             }
         }
-
         // 由object_manager统一销毁
         ObjectManager::get_instance().unload_object(this);
     }

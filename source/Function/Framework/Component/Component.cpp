@@ -9,7 +9,6 @@ REGISTRATION_NO_CONSTRUCTOR_BEGIN(Component)
     .property("owner_object", &Component::get_owner_object, &Component::set_owner_object)(
         METADATA_SERIALIZE, METADATA_GUIDTOOBJECT);
 
-    // TODO:map中的反序列化时，需要在此创建
     rttr::registration::class_<std::vector<Component*>>("components vector")
         .constructor()(rttr::policy::ctor::as_object);
     rttr::registration::class_<std::list<Component*>>("components list")
@@ -17,8 +16,13 @@ REGISTRATION_NO_CONSTRUCTOR_BEGIN(Component)
 REGISTRATION_END
 
 namespace TinyRenderer {
-    Component::~Component() {}
 
+    Component::~Component() {
+        if (owner_object_ && owner_object_->is_destroyed_ == false) {
+            owner_object_->on_unload_component(this);
+        }
+        owner_object_ = nullptr;
+    }
 
     void Component::set_owner_object(GameObject *parent) {
         if (parent)

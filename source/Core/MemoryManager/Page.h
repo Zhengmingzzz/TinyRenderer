@@ -30,7 +30,7 @@ namespace TinyRenderer {
 
     public:
         void startUp(int block_size, int block_num,  void* user_address, Allocator* owner_);
-        void shutDown();
+        void shutdown();
         static Page* allocate_newPage(int block_size, int block_num, Allocator* owner_, int alignment = DEFAULT_ALIGNMENT);
 
         bool allocate_block(void*& res);

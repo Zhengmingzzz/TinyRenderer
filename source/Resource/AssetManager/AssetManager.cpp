@@ -84,11 +84,11 @@ namespace TinyRenderer {
 
         // 对于Object类型处理方法
         rttr::variant var = t.create();
+        // bool b = var.is_valid();
         io::from_json(res_json, var);
 
         return var;
     }
-
 
     // 根据object的guid将它序列化到对应位置
     bool AssetManager::save(PrimaryObject* target_object_ptr) {

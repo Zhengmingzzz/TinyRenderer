@@ -9,10 +9,10 @@
 namespace TinyRenderer {
     class CounterManager {
     public:
-        static CounterManager& instance();
+        static CounterManager& get_instance();
 
         void startUp();
-        void shutDown();
+        void shutdown();
 
         Counter* CreateCounter(const char* name);
         Counter* GetCounter(const char* name);
@@ -31,34 +31,34 @@ namespace TinyRenderer {
 
 #define Counter_Add(arg_name) \
         do{ \
-            Counter* counter_##arg_name = CounterManager::instance().GetCounter(#arg_name); \
+            Counter* counter_##arg_name = CounterManager::get_instance().GetCounter(#arg_name); \
             if(counter_##arg_name == nullptr){ \
-                counter_##arg_name = CounterManager::instance().CreateCounter(#arg_name); \
+                counter_##arg_name = CounterManager::get_instance().CreateCounter(#arg_name); \
             } \
             counter_##arg_name->fetch_add(); \
         }while(0);
 
 #define Counter_Sub(arg_name) \
         do{ \
-            Counter* counter_##arg_name = CounterManager::instance().GetCounter(#arg_name); \
+            Counter* counter_##arg_name = CounterManager::get_instance().GetCounter(#arg_name); \
             if(counter_##arg_name == nullptr){ \
-                counter_##arg_name = CounterManager::instance().CreateCounter(#arg_name); \
+                counter_##arg_name = CounterManager::get_instance().CreateCounter(#arg_name); \
             } \
             counter_##arg_name->fetch_sub(); \
         }while(0);
 
 #define Counter_Reset(arg_name) \
         do{ \
-            Counter* counter_##arg_name = CounterManager::instance().GetCounter(#arg_name); \
+            Counter* counter_##arg_name = CounterManager::get_instance().GetCounter(#arg_name); \
             if(counter_##arg_name == nullptr){ \
-                counter_##arg_name = CounterManager::instance().CreateCounter(#arg_name); \
+                counter_##arg_name = CounterManager::get_instance().CreateCounter(#arg_name); \
             } \
             counter_##arg_name->reset(); \
         }while(0);
 
 #define Counter_GetCnt(arg_name) \
         do{ \
-            Counter* counter_##arg_name = CounterManager::instance().GetCounter(#arg_name); \
+            Counter* counter_##arg_name = CounterManager::get_instance().GetCounter(#arg_name); \
             if(counter_##arg_name != nullptr){ \
                 LOG_INFO("counter__"#arg_name << " sum:" << counter_##arg_name->get() << " times"); \
             } \

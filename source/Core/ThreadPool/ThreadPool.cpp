@@ -7,7 +7,7 @@ namespace TinyRenderer {
     size_t ThreadPool::max_thread_count;
     size_t ThreadPool::min_thread_count;
 
-    ThreadPool& ThreadPool::instance() {
+    ThreadPool& ThreadPool::get_instance() {
         static ThreadPool* pool = nullptr;
 
         std::call_once(
@@ -97,7 +97,7 @@ namespace TinyRenderer {
                 condition.notify_all();
 
                 // 调用TextureBlock关闭函数
-                block->shutDown();
+                block->shutdown();
                 {
                     std::lock_guard lock(thread_mutex_);
                     workers.erase(it);
@@ -119,18 +119,18 @@ namespace TinyRenderer {
         }
     }
 
-    void ThreadPool::shutDown(){
+    void ThreadPool::shutdown(){
         threadpool_stop.store(true, std::memory_order_seq_cst);
 
         condition.notify_all();
 
         for (auto& worker : workers) {
             // 等待所有线程执行完
-            worker->shutDown();
+            worker->shutdown();
         }
         workers.clear();
 
-        delete &instance();
+        delete &get_instance();
     }
 
     void ThreadPool::adjust_workers() {

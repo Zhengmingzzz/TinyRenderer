@@ -26,5 +26,7 @@ REGISTRATION_NO_CONSTRUCTOR_BEGIN(Object)
 REGISTRATION_END
 
 namespace TinyRenderer {
-    Object::~Object() {}
+    Object::~Object() {
+        LOG_INFO("object is destroyed!" << " type:" << get_object_type());
+    }
 } // TinyRenderer

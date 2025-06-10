@@ -41,6 +41,16 @@ namespace TinyRenderer {
 
     void LevelManager::shutdown() const {
         save();
+        auto go = active_level_->root_gameobject_list_.front();
+        go->transform_.position_ = glm::vec3(1, 0, 0);
+        // 逐级调用level保存逻辑
+        auto level_it = level_instance_list_.begin();
+        while (level_it != level_instance_list_.end()) {
+            if (*level_it) {
+                (*level_it)->unload();
+                ++level_it;
+            }
+        }
     }
 
     void LevelManager::set_active_level(const std::filesystem::path &meta_path) {
@@ -149,7 +159,6 @@ namespace TinyRenderer {
         if (guid.is_valid()) {
             load_level(guid);
         }
-        return;
     }
 
     void LevelManager::load_level(const GUID &guid) {
@@ -157,31 +166,14 @@ namespace TinyRenderer {
         if (GUIDReference::get_instance().is_exist(guid)) {
             return;
         }
-
         pending_load_level_guid_ = guid;// 延迟到下一帧加载
-        return;
     }
 
     // 由Level调用
-    bool LevelManager::on_unload_level(const GUID &guid) {
-        if (!guid.is_valid()) {
-            LOG_WARN("LevelManager::on_unload_level: invalid GUID");
+    bool LevelManager::on_unload_level(Level* level) {
+        if (!level)
             return false;
-        }
-        if (guid == active_level_->get_guid()) {
-            LOG_WARN("active level can not unload");
-            return false;
-        }
-        Object* obj_ptr = GUIDReference::get_instance().get_object(guid);
-        // 不存在这个实例，直接返回
-        Level* level_ptr = rttr::rttr_cast<Level*, Object*>(obj_ptr);
-        // 类型不匹配，直接返回
-        if (!level_ptr) {
-            LOG_WARN(guid.to_string() << " this guid not level type");
-            return false;
-        }
-
-        level_instance_list_.remove(level_ptr);
+        level_instance_list_.remove(level);
         return true;
     }
 

@@ -13,7 +13,7 @@ class ObjectManager {
 public:
 
 private:
-    std::vector<Object*> unload_object_array_;
+    std::list<Object*> pending_unload_object_list_;
 public:
     ObjectManager& operator=(ObjectManager&) = delete;
     ObjectManager(ObjectManager&) = delete;
@@ -27,6 +27,7 @@ public:
     void unload_object(const GUID& object_guid);
 
     void tick();
+    void shutdown();
 private:
     ObjectManager() = default;
 

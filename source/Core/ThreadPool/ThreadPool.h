@@ -27,7 +27,7 @@ namespace TinyRenderer {
     class ThreadPool {
     public:
         // 全局线程池单例（避免重复创建）
-        static ThreadPool& instance();
+        static ThreadPool& get_instance();
 
         // 开启一个工作线程
         void launch_worker_thread();
@@ -37,7 +37,7 @@ namespace TinyRenderer {
 
         void startUp(size_t thread_count = 2, size_t min_thread_cnt = 2, size_t max_thread_cnt = std::thread::hardware_concurrency());
 
-        void shutDown();
+        void shutdown();
 
         template<class F, class... Args>
         auto enqueue(TaskPriority priority, F&& f, Args&&... args) ->  TaskResult<typename std::invoke_result<F, Args...>::type>{
@@ -98,7 +98,7 @@ namespace TinyRenderer {
                 });
             };
 
-            void shutDown() {
+            void shutdown() {
                 if (thread.joinable()) {
                     thread.join();
                 }

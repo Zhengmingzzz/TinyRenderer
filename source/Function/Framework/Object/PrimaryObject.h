@@ -5,7 +5,7 @@
 #include "Object.h"
 
 namespace TinyRenderer {
-    // 可单独序列化的对象
+    // 管理序列化与唯一标识
     class PrimaryObject : public Object {
     public:
         PrimaryObject() = default;

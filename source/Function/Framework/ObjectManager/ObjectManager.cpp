@@ -18,12 +18,18 @@ namespace TinyRenderer {
 
     void ObjectManager::unload_object(Object *object) {
         // unload_object_array_.push_back(object);
-        delete object;
+        object->set_active(false);
+        pending_unload_object_list_.push_back(object);
     }
 
     void ObjectManager::tick() {
-        for (auto& unload_object : unload_object_array_) {
-            delete unload_object;
+        for (Object* unload_object : pending_unload_object_list_) {
+            deleteElement(unload_object);
         }
     }
+
+    void ObjectManager::shutdown() {
+        tick();
+    }
+
 } // TinyRenderer

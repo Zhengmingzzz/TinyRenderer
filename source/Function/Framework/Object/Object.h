@@ -6,12 +6,13 @@
 #include "Core/GUIDReference/GUIDReference.h"
 #include "Resource/GUID/GUID.h"
 #include <rttr/registration>
+#include <Core/MemoryManager/MemoryManager.h>
 
 #define REGISTRATION_WITH_CONSTRUCTOR_BEGIN(className) \
 RTTR_REGISTRATION{ \
 using namespace TinyRenderer; \
 rttr::registration::class_<className>(#className) \
-.constructor([]{return new className();}, rttr::policy::ctor::as_raw_ptr)
+.constructor([]{return newElement(className);}, rttr::policy::ctor::as_raw_ptr)
 
 #define REGISTRATION_NO_CONSTRUCTOR_BEGIN(className) \
 RTTR_REGISTRATION{ \

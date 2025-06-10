@@ -9,7 +9,7 @@
 namespace TinyRenderer {
     class GameObject;
 
-    class Level : public HierarchyNode, public PrimaryObject {
+    class Level : public PrimaryObject, public HierarchyNode {
     public:
         std::list<GameObject*> root_gameobject_list_; // 只存储根GO，GO下的子GO由它的父GO管理
     private:
@@ -18,6 +18,9 @@ namespace TinyRenderer {
         Level() = default;
         Level(const GUID& guid) : PrimaryObject(guid) {}
         Level(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {}
+        ~Level() override {
+            LevelManager::get_instance().on_unload_level(this);
+        }
 
         static Level* create(const std::string& name = "default level", const std::filesystem::path &parent_dir = ConfigManager::get_instance().get_asset_fodder_path()/"Level");
         GameObject* get_gameobject(const std::string& name);

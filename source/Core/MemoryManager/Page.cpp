@@ -28,7 +28,7 @@ namespace TinyRenderer {
         Page::link_freelist(user_address_, block_size, block_num);
     }
 
-    void Page::shutDown() {
+    void Page::shutdown() {
     }
 
     void Page::link_freelist(Block *user_address, int block_size, int block_num) {
@@ -69,7 +69,7 @@ namespace TinyRenderer {
         }
 
         // 向MemoryManager注册新页
-        MemoryManager::instance().register_newPage(new_page);
+        MemoryManager::get_instance().register_newPage(new_page);
         // DEBUG_MEM_ALLOCATE_NEW_PAGE(block_size, new_page, block_num);
 
         return new_page;

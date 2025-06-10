@@ -14,7 +14,7 @@
 
 namespace TinyRenderer {
 
-    MemoryManager& MemoryManager::instance() {
+    MemoryManager& MemoryManager::get_instance() {
         static MemoryManager* instance = nullptr;
         std::call_once(instance_flag_, [&]() {
             instance = new MemoryManager();
@@ -24,7 +24,7 @@ namespace TinyRenderer {
 
 
     void MemoryManager::startUp() {
-        MemoryManager& memoryManager = MemoryManager::instance();
+        MemoryManager& memoryManager = MemoryManager::get_instance();
         // 从2的0次方一直到2的MAX_TWOPOWERI次方
         size_t block_size = 1;
         for (int i = 0; i <= MAX_TWOPOWERI; i++) {
@@ -43,10 +43,10 @@ namespace TinyRenderer {
     }
 
 
-    void MemoryManager::shutDown() {
-        MemoryManager& memoryManager = MemoryManager::instance();
+    void MemoryManager::shutdown() {
+        MemoryManager& memoryManager = MemoryManager::get_instance();
         for (int i = 0; i <= MAX_TWOPOWERI; i++) {
-            allocators_[i]->shutDown();
+            allocators_[i]->shutdown();
             allocators_[i].release();
         }
         delete &memoryManager;
@@ -58,19 +58,21 @@ namespace TinyRenderer {
         // StopWatch_Start(alloc_time);
 
         size_t twopoweri = MAX_TWOPOWERI + 1;
+        if (size == 0) {
+            LOG_WARN("can't allocate zero size");
+            return nullptr;
+        }
         // 找到大于size的第一个allocator
         for (int i=0;i<=MAX_TWOPOWERI;i++) {
-            if (allocators_[i]->block_size_<=size) {
                 twopoweri = i;
-            }
-            else
+            if (allocators_[i]->block_size_>=size)
                 break;
         }
 
         void* res = nullptr;
         // 超出内存池管理范围，直接使用malloc
         if (twopoweri > MAX_TWOPOWERI) {
-            res = malloc(twopoweri);
+            res = malloc(size);
         }
         else {
             res = allocators_[twopoweri]->allocate();
@@ -80,7 +82,6 @@ namespace TinyRenderer {
     }
 
     void MemoryManager::deallocate(void* ptr) {
-        StopWatch_Start(deallocate_time);
         // 1.找到小于ptr的最大值
         auto it = pages_.upper_bound(reinterpret_cast<Page*>(ptr));
         if (it != pages_.begin()) {
@@ -93,13 +94,11 @@ namespace TinyRenderer {
                 if (isRecycle_page) {
                     pages_.erase(it);
                 }
-                StopWatch_Pause(deallocate_time);
                 return;
             }
         }
         // 如果到这没有回收则调用free
         free(ptr);
-        StopWatch_Pause(deallocate_time);
     }
 
     // void MemoryManager::tick() {
