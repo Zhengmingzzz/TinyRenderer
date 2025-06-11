@@ -3,6 +3,9 @@
 //
 #pragma once
 
+#include <rttr/registration>
+#include <rttr/registration_friend>
+
 #include <chrono>
 #include <cstdint>
 #include <random>
@@ -10,8 +13,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <rttr/registration_friend>
-#include <rttr/type.h>
 #include <string>
 #include "Function/CommonType/json.h"
 

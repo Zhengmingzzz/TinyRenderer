@@ -15,7 +15,6 @@ namespace TinyRenderer {
 
     // 提供资源的加载 卸载服务
     // TODO:AssetManager职责过重，需要拆分为多个模块
-    // TODO:GUIDTOOBJECT似乎没什么用，尝试删除
     class AssetManager {
     public:
 

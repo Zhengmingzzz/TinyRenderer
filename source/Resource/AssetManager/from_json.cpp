@@ -290,7 +290,7 @@ namespace TinyRenderer {
                         prop.set_value(obj, guid);
                 }
                 // 处理PrimaryObject*类型 直接反序列化对应的GUID。如Level GO Resource都是走这条路线。Resource通过重载set_guid自动实现加载
-                else if ((prop_type.is_derived_from(rttr::type::get<PrimaryObject>()) && prop_type.is_pointer()) || prop_type == rttr::type::get<HierarchyNode*>()) {
+                else if (prop_type.is_derived_from(rttr::type::get<PrimaryObject>()) && prop_type.is_pointer()) {
                     GUID guid(json_value.get<string>());
                     variant var = prop.get_value(obj);
                     // HierarchyNode* pobj = var.get_value<HierarchyNode*>();

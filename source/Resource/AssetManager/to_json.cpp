@@ -77,8 +77,9 @@ namespace TinyRenderer {
                 json[name] = guid.to_string();
                 return true;
             }
+            // TODO:将HierarchyNode作为PrimaryObject的子类
             // PrimaryObject*类型直接保存为GUID，并且将它保存到另一个GUID.json文件。Resource类型也是走这条路线
-            else if((t.is_derived_from<HierarchyNode>() || t.is_derived_from<PrimaryObject>()) && t.is_pointer()) {
+            else if(t.is_derived_from<PrimaryObject>() && t.is_pointer()) {
                 rttr::variant converted_value = var.convert<PrimaryObject*>();
                 if (converted_value.is_valid()) {
                     PrimaryObject* obj_ptr = converted_value.get_value<PrimaryObject*>();

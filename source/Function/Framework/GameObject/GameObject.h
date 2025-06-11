@@ -10,13 +10,12 @@
 #include "Function/Framework/Component/Component.h"
 #include "Function/Framework/LevelManager/LevelManager.h"
 #include "Function/Framework/HierarchyNode/HierarchyNode.h"
-#include "Function/Framework/Object/PrimaryObject.h"
 #include "Function/Message/Message.h"
 
 namespace TinyRenderer {
     class Level;
 
-    class GameObject : public PrimaryObject, public HierarchyNode {
+    class GameObject : public HierarchyNode {
         friend Component::~Component();
     public:
         Transform transform_;
@@ -34,7 +33,7 @@ namespace TinyRenderer {
         GameObject() {
             transform_.set_owner_object(this);
         }
-        GameObject(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {
+        GameObject(const GUID& guid, const std::string& name) : HierarchyNode(guid, name) {
             transform_.set_owner_object(this);
         }
 
@@ -135,7 +134,7 @@ namespace TinyRenderer {
         void on_remove_child(HierarchyNode* child) override;
 
         RTTR_REGISTRATION_FRIEND
-        RTTR_ENABLE(HierarchyNode, PrimaryObject)
+        RTTR_ENABLE(HierarchyNode)
     };
 } // TinyRenderer
 

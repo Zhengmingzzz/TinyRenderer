@@ -3,9 +3,10 @@
 //
 #pragma once
 
+#include <rttr/registration>
+
 #include "Core/GUIDReference/GUIDReference.h"
 #include "Resource/GUID/GUID.h"
-#include <rttr/registration>
 #include <Core/MemoryManager/MemoryManager.h>
 
 #define REGISTRATION_WITH_CONSTRUCTOR_BEGIN(className) \
@@ -24,9 +25,6 @@ rttr::registration::class_<className>(#className)
 // TODO: 需要新增反射属性标识时，在此新增一个宏，并且在to/from json中修改
 #define PROPERTY_FLAG_SERIALIZE "SERIALIZE"
 #define METADATA_SERIALIZE rttr::detail::metadata(PROPERTY_FLAG_SERIALIZE, true) // 需要实现序列化功能
-
-// #define PROPERTY_FLAG_GUIDTOOBJECT "GUIDTOOBJECT"
-// #define METADATA_GUIDTOOBJECT rttr::detail::metadata(PROPERTY_FLAG_GUIDTOOBJECT, true) // 反序列化时需要将GUID转为object*
 
 namespace TinyRenderer {
     // TODO:移除Object的name_字段

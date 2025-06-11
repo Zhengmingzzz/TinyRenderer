@@ -2,18 +2,14 @@
 // Created by Administrator on 25-4-15.
 //
 #pragma once
+#include <rttr/registration>
+
 #include <memory>
 #include "array"
 #include "Allocator.h"
 #include <set>
-
 #include "Core/DebugMemoryManager/DebugMemoryManager.h"
-#include "Function/Counter/CounterManager.h"
-#include "Function/StopWatch/StopWatchManager.h"
-
 #include <source_location>
-#include <rttr/registration>
-#include "Function/Framework/HierarchyNode/HierarchyNode.h"
 
 namespace TinyRenderer {
     // 内存占用率的等级划分
@@ -118,13 +114,6 @@ namespace TinyRenderer {
     template<typename T>
     void deleteElement(T* ptr) {
         if (ptr != nullptr) {
-            // uintptr_t tmp_address_uint = (uintptr_t)ptr;
-            // tmp_address_uint -= sizeof(void*);
-            // // if (rttr::type::get<T>().is_derived_from(rttr::type::get<HierarchyNode>())) {
-            // //     tmp_address_uint -= sizeof(HierarchyNode);
-            // // }
-            // void* tmp_address = reinterpret_cast<void*>(tmp_address_uint);
-
 
             ptr->~T();
             MemoryManager::get_instance().deallocate(ptr);

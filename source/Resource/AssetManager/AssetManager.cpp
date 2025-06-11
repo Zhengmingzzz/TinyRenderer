@@ -1,9 +1,6 @@
 ﻿//
 // Created by Administrator on 25-5-24.
 //
-// TODO:1.Object添加字段__type__
-// TODO:2.load_variant通过这个__type__字段创建variant 接着更改from_json的基础类型处理函数和array处理函数
-// TODO:3.处理from_json的extract_value
 
 #include "AssetManager.h"
 #include <fstream>
@@ -16,7 +13,6 @@
 
 #include "from_json.h"
 #include "to_json.h"
-#include "Function/Framework/Object/PrimaryObject.h"
 #include "Function/Message/Message.h"
 
 

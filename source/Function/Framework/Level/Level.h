@@ -2,22 +2,22 @@
 // Created by Administrator on 25-5-24.
 //
 #pragma once
+#include "Function/Framework/LevelManager/LevelManager.h"
 #include "Function/Framework/GameObject/GameObject.h"
 #include "Function/Framework/HierarchyNode/HierarchyNode.h"
-#include "Function/Framework/Object/PrimaryObject.h"
 
 namespace TinyRenderer {
     class GameObject;
 
-    class Level : public PrimaryObject, public HierarchyNode {
+    class Level : public HierarchyNode {
     public:
         std::list<GameObject*> root_gameobject_list_; // 只存储根GO，GO下的子GO由它的父GO管理
     private:
 
     public:
         Level() = default;
-        Level(const GUID& guid) : PrimaryObject(guid) {}
-        Level(const GUID& guid, const std::string& name) : PrimaryObject(guid, name) {}
+        Level(const GUID& guid) : HierarchyNode(guid) {}
+        Level(const GUID& guid, const std::string& name) : HierarchyNode(guid, name) {}
         ~Level() override {
             LevelManager::get_instance().on_unload_level(this);
         }
@@ -35,7 +35,7 @@ namespace TinyRenderer {
         void on_add_child(HierarchyNode* node) override;
         void on_remove_child(HierarchyNode* node) override;
 
-        RTTR_ENABLE(HierarchyNode, PrimaryObject)
+        RTTR_ENABLE(HierarchyNode)
     };
 } // TinyRenderer
 
