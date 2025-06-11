@@ -10,13 +10,13 @@
 
 REGISTRATION_WITH_CONSTRUCTOR_BEGIN(GameObject)
         .property("parent node",&GameObject::get_parent, &GameObject::set_parent)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
+            METADATA_SERIALIZE)
         .property("transform", &GameObject::transform_)(
             METADATA_SERIALIZE)
         .property("children", &GameObject::children_list_)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
+            METADATA_SERIALIZE)
         .property("components", &GameObject::component_map_)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT)
+            METADATA_SERIALIZE)
 REGISTRATION_END
 
 

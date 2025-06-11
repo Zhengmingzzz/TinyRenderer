@@ -27,6 +27,6 @@ REGISTRATION_END
 
 namespace TinyRenderer {
     Object::~Object() {
-        LOG_INFO("object is destroyed!" << " type:" << get_object_type());
+        // LOG_INFO("object is destroyed!" << " type:" << get_object_type());
     }
 } // TinyRenderer

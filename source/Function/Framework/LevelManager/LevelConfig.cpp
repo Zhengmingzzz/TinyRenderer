@@ -14,5 +14,5 @@ RTTR_REGISTRATION{
         .property("level guid array", &LevelConfig::level_guid_array_)(
             METADATA_SERIALIZE)
         .property("level instance array", &LevelConfig::level_instance_array_)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT);
+            METADATA_SERIALIZE);
 }

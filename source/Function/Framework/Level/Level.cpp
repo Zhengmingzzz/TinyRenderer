@@ -10,7 +10,7 @@
 
 REGISTRATION_WITH_CONSTRUCTOR_BEGIN(Level)
         .property("gameobject instance array", &Level::root_gameobject_list_)(
-            METADATA_SERIALIZE, METADATA_GUIDTOOBJECT);
+            METADATA_SERIALIZE);
 REGISTRATION_END
 
 namespace TinyRenderer {

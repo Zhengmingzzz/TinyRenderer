@@ -27,7 +27,7 @@ namespace TinyRenderer {
         HierarchyNode* parent_node_ = nullptr; // 有可能是GO，也有可能是Level，表示上一层级的节点
 
         std::unordered_map<std::string, std::vector<Component*>> component_map_;
-        bool is_destroyed_ = false;
+        bool is_destroyed_ = false; // 标记这个GO对象是否已经调用析构，调用后无法使用这个对象的数据
     public:
         // 默认属于
         static GameObject* create(const std::string& name = "default GO", HierarchyNode* parent_node = nullptr);

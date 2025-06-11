@@ -7,7 +7,7 @@
 
 REGISTRATION_NO_CONSTRUCTOR_BEGIN(Component)
     .property("owner_object", &Component::get_owner_object, &Component::set_owner_object)(
-        METADATA_SERIALIZE, METADATA_GUIDTOOBJECT);
+        METADATA_SERIALIZE);
 
     rttr::registration::class_<std::vector<Component*>>("components vector")
         .constructor()(rttr::policy::ctor::as_object);

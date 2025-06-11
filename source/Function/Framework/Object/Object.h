@@ -25,9 +25,8 @@ rttr::registration::class_<className>(#className)
 #define PROPERTY_FLAG_SERIALIZE "SERIALIZE"
 #define METADATA_SERIALIZE rttr::detail::metadata(PROPERTY_FLAG_SERIALIZE, true) // 需要实现序列化功能
 
-#define PROPERTY_FLAG_GUIDTOOBJECT "GUIDTOOBJECT"
-#define METADATA_GUIDTOOBJECT rttr::detail::metadata(PROPERTY_FLAG_GUIDTOOBJECT, true) // 反序列化时需要将GUID转为object*
-
+// #define PROPERTY_FLAG_GUIDTOOBJECT "GUIDTOOBJECT"
+// #define METADATA_GUIDTOOBJECT rttr::detail::metadata(PROPERTY_FLAG_GUIDTOOBJECT, true) // 反序列化时需要将GUID转为object*
 
 namespace TinyRenderer {
     // TODO:移除Object的name_字段
